@@ -1,0 +1,105 @@
+<div class="dashboard">
+  <header class="header">
+    <div>
+      <h1 class="title">Estação Meteorológica</h1>
+      @if (medicao(); as m) {
+        <p class="last-update">Última atualização: {{ formatarData(m.created_at) }}</p>
+      }
+    </div>
+    <a routerLink="/evolucao" class="link-evolucao">Evolução por data →</a>
+  </header>
+
+  <section class="current-data">
+    <h2 class="section-title">Dados atuais</h2>
+    @if (loadingDados()) {
+      <div class="cards-grid">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="card card-skeleton"></div>
+        }
+      </div>
+    } @else if (errorDados()) {
+      <div class="error-message">Falha ao carregar os dados. Tentando novamente em até 10 minutos.</div>
+    } @else if (medicao(); as m) {
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+            </svg>
+          </div>
+          <div class="card-content">
+            <span class="card-value">{{ m.temperatura | number:'1.1-1' }} °C</span>
+            <span class="card-label">Temperatura</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+            </svg>
+          </div>
+          <div class="card-content">
+            <span class="card-value">{{ m.umidade | number:'1.1-1' }} %</span>
+            <span class="card-label">Umidade</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+          </div>
+          <div class="card-content">
+            <span class="card-value">{{ m.pressao | number:'1.0-0' }} mbar</span>
+            <span class="card-label">Pressão</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 13v8"/>
+              <path d="M8 13v8"/>
+              <path d="M12 15v8"/>
+              <path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/>
+            </svg>
+          </div>
+          <div class="card-content">
+            <span class="card-value">{{ m.precipitacao | number:'1.1-1' }}</span>
+            <span class="card-label">Precipitação</span>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-message">Nenhuma medição disponível.</div>
+    }
+  </section>
+
+  <section class="rain-forecast">
+    <h2 class="section-title">Chance de chuva</h2>
+    <p class="section-subtitle">Próxima 1 hora</p>
+    @if (loadingPrevisao()) {
+      <div class="forecast-cards">
+        @for (i of [1]; track i) {
+          <div class="forecast-card forecast-skeleton"></div>
+        }
+      </div>
+    } @else if (errorPrevisao()) {
+      <div class="error-message">Falha ao carregar a previsão. Tentando novamente em até 30 minutos.</div>
+    } @else if (previsao(); as p) {
+      <div class="forecast-cards">
+        @for (horizonte of p.previsoes; track horizonte.horizonte) {
+          <div class="forecast-card">
+            <span class="forecast-horizon">{{ horizonte.horizonte }}</span>
+            <div class="forecast-bar-wrap">
+              <div class="forecast-bar" [style.width.%]="probPercent(horizonte.probabilidade)"></div>
+            </div>
+            <span class="forecast-value">{{ probPercent(horizonte.probabilidade) }} %</span>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="empty-message">Previsão indisponível.</div>
+    }
+  </section>
+</div>
