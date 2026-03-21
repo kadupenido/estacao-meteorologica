@@ -4,10 +4,12 @@ import { RouterLink } from '@angular/router';
 import { timer, switchMap, Subject, takeUntil } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
+import { DADOS_REFRESH_INTERVAL_MS } from '../../core/constants/dados-refresh';
+import { adcParaMm } from '../../core/utils/precipitacao-mm';
+import { environment } from '../../../environments/environment';
 import type { Medicao } from '../../shared/models/medicao.model';
 import type { Previsao } from '../../shared/models/previsao.model';
 
-const DADOS_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
 const PREVISAO_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
 
 @Component({
@@ -29,7 +31,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected errorPrevisao = signal(false);
 
   ngOnInit(): void {
-    timer(0, DADOS_INTERVAL_MS)
+    timer(0, DADOS_REFRESH_INTERVAL_MS)
       .pipe(
         switchMap(() => {
           this.loadingDados.set(true);
@@ -95,5 +97,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected probPercent(prob: number): number {
     return Math.round(prob * 100);
+  }
+
+  /** Mesma conversão ADC→mm usada em api/app/ml/preprocessing.py antes do modelo. */
+  protected precipitacaoMm(valorAdc: number): number {
+    return adcParaMm(valorAdc, environment.rainPowerA, environment.rainPowerB);
   }
 }

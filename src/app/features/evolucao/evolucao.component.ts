@@ -1,11 +1,15 @@
-import { Component, OnInit, signal, inject, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
+import { timer, switchMap, Subject, takeUntil } from 'rxjs';
 
 import { ApiService } from '../../core/services/api.service';
+import { DADOS_REFRESH_INTERVAL_MS } from '../../core/constants/dados-refresh';
+import { adcParaMm } from '../../core/utils/precipitacao-mm';
+import { environment } from '../../../environments/environment';
 import type { Medicao } from '../../shared/models/medicao.model';
 
 @Component({
@@ -15,8 +19,9 @@ import type { Medicao } from '../../shared/models/medicao.model';
   templateUrl: './evolucao.component.html',
   styleUrl: './evolucao.component.scss',
 })
-export class EvolucaoComponent implements OnInit {
+export class EvolucaoComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly destroy$ = new Subject<void>();
 
   protected dataSelecionada = signal<string>(this.hoje());
   protected medicoes = signal<Medicao[]>([]);
@@ -29,6 +34,9 @@ export class EvolucaoComponent implements OnInit {
     const temps = m.map((x) => x.temperatura);
     const umids = m.map((x) => x.umidade);
     const press = m.map((x) => x.pressao);
+    const precs = m.map((x) =>
+      adcParaMm(x.precipitacao, environment.rainPowerA, environment.rainPowerB),
+    );
     return {
       tempMin: Math.min(...temps),
       tempMax: Math.max(...temps),
@@ -36,6 +44,8 @@ export class EvolucaoComponent implements OnInit {
       umidMax: Math.max(...umids),
       pressMin: Math.min(...press),
       pressMax: Math.max(...press),
+      precipMin: Math.min(...precs),
+      precipMax: Math.max(...precs),
     };
   });
 
@@ -60,9 +70,34 @@ export class EvolucaoComponent implements OnInit {
   protected chartDataTemp: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataUmid: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPress: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataPrecip: ChartConfiguration['data'] = { labels: [], datasets: [] };
 
   ngOnInit(): void {
-    this.carregar();
+    timer(0, DADOS_REFRESH_INTERVAL_MS)
+      .pipe(
+        switchMap(() => {
+          this.loading.set(true);
+          this.error.set(false);
+          return this.api.getMedicoesPorData(this.dataSelecionada());
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (meds) => {
+          this.medicoes.set(meds);
+          this.atualizarCharts(meds);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.error.set(true);
+          this.loading.set(false);
+        },
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private hoje(): string {
@@ -117,10 +152,21 @@ export class EvolucaoComponent implements OnInit {
       fill: true,
       tension: 0.3,
     };
+    const dsPrecip: ChartDataset<'line'> = {
+      data: meds.map((m) =>
+        adcParaMm(m.precipitacao, environment.rainPowerA, environment.rainPowerB),
+      ),
+      label: 'Precipitação (mm)',
+      borderColor: '#38bdf8',
+      backgroundColor: 'rgba(56, 189, 248, 0.15)',
+      fill: true,
+      tension: 0.3,
+    };
 
     this.chartDataTemp = { labels, datasets: [dsTemp] };
     this.chartDataUmid = { labels, datasets: [dsUmid] };
     this.chartDataPress = { labels, datasets: [dsPress] };
+    this.chartDataPrecip = { labels, datasets: [dsPrecip] };
   }
 
   private formatarHora(iso: string): string {

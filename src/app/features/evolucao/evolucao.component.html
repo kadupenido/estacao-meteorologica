@@ -52,6 +52,13 @@
             <span class="card-max">Máx: {{ maxMin()!.pressMax | number:'1.0-0' }} mbar</span>
           </div>
         </div>
+        <div class="card">
+          <span class="card-label">Precipitação</span>
+          <div class="card-values">
+            <span class="card-min">Mín: {{ maxMin()!.precipMin | number:'1.2-2' }} mm</span>
+            <span class="card-max">Máx: {{ maxMin()!.precipMax | number:'1.2-2' }} mm</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -76,6 +83,13 @@
         <h3 class="chart-title">Pressão (hPa)</h3>
         <div class="chart-wrapper">
           <canvas baseChart [data]="chartDataPress" [options]="chartOptions" type="line"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <h3 class="chart-title">Precipitação (mm)</h3>
+        <div class="chart-wrapper">
+          <canvas baseChart [data]="chartDataPrecip" [options]="chartOptions" type="line"></canvas>
         </div>
       </div>
     </section>
