@@ -1,6 +1,8 @@
 export const environment = {
   production: true,
   apiUrl: '/api',
+  /** Intervalo (ms) entre atualizações: medição atual, previsão e gráfico do dia. Padrão: 5 min. */
+  refreshIntervalMs: 5 * 60 * 1000,
   /** Alinhar com api/app/config.py (rain_power_a / rain_power_b) */
   rainPowerA: 60.0,
   rainPowerB: 1.8,
