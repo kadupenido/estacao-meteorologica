@@ -1,59 +1,97 @@
-# EstacaoMeteorologica
+# Estação meteorológica — frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.2.
+Interface web do projeto, em [Angular](https://angular.dev/) com **SSR** (renderização no servidor via Express). Geração e build com [Angular CLI](https://angular.dev/tools/cli) 21.x.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+- Angular 21, TypeScript, SCSS
+- `@angular/ssr` + Express — app híbrida e servidor Node em produção
+- `chart.js` / `ng2-charts` — gráficos
+- Testes unitários: Vitest (`ng test`)
+- Container: Node 22 (Alpine), ver `Dockerfile`
+
+## Pré-requisitos
+
+- Node.js compatível com o projeto (recomendado: **22.x**, alinhado ao Docker)
+- npm (o repositório fixa `packageManager` em `npm@11.6.2`)
+
+## Instalação
 
 ```bash
-ng serve
+npm ci
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Desenvolvimento
 
 ```bash
-ng generate component component-name
+npm start
+# ou: ng serve
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Abra `http://localhost:4200/`. O servidor recarrega ao alterar os arquivos.
+
+No perfil **development**, as URLs da API estão em `src/environments/environment.development.ts` (por padrão apontam para o backend público). Ajuste conforme necessário para apontar para uma API local.
+
+## Build de produção
 
 ```bash
+npm run build
+```
+
+Saída em `dist/estacao-meteorologica/` (browser + servidor Node).
+
+### Rodar o SSR localmente (após o build)
+
+```bash
+npm run serve:ssr
+```
+
+Equivale a executar `node dist/estacao-meteorologica/server/server.mjs`. A porta vem de `PORT` (padrão **4000**).
+
+## Docker
+
+Build multi-stage e execução do servidor SSR na porta **4000**:
+
+```bash
+docker compose build
+docker compose up
+```
+
+O `docker-compose.yml` espera a rede Docker **externa** `web` (mesma rede em que o serviço da API costuma estar, por exemplo `estacao-meteorologica-api`). Crie-a se ainda não existir:
+
+```bash
+docker network create web
+```
+
+Variáveis usadas no compose:
+
+| Variável        | Descrição                                      |
+|-----------------|------------------------------------------------|
+| `PORT`          | Porta HTTP do Node (padrão `4000`)             |
+| `API_UPSTREAM`  | URL base da API sem `/api` (ex.: `http://estacao-meteorologica-api:8000`) |
+
+No servidor Node, as requisições do browser para `/api/*` são encaminhadas para `API_UPSTREAM`, com reescrita de caminho (`/api` removido antes do proxy). Ver `src/server.ts`.
+
+## Variáveis de ambiente (SSR / produção)
+
+- **`PORT`** — porta de escuta (padrão `4000`).
+- **`API_UPSTREAM`** — backend HTTP alvo do proxy `/api` (padrão no código: `http://estacao-meteorologica-api:8000`).
+
+## Testes
+
+```bash
+npm test
+# ou: ng test
+```
+
+## Schematics (Angular CLI)
+
+```bash
+ng generate component nome-do-componente
 ng generate --help
 ```
 
-## Building
+## Referências
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [Angular CLI — visão geral e comandos](https://angular.dev/tools/cli)
+- [Vitest](https://vitest.dev/)
