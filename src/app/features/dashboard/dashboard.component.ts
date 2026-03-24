@@ -1,11 +1,13 @@
-import { Component, OnInit, OnDestroy, signal, inject, computed } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { Component, OnInit, OnDestroy, PLATFORM_ID, signal, inject, computed } from '@angular/core';
+import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { timer, switchMap, Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
 
 import { ApiService } from '../../core/services/api.service';
+import { SeoService } from '../../core/services/seo.service';
+import { JsonLdService } from '../../core/services/json-ld.service';
 import { adcParaMm } from '../../core/utils/precipitacao-mm';
 import { environment } from '../../../environments/environment';
 import type { Medicao } from '../../shared/models/medicao.model';
@@ -20,6 +22,9 @@ import type { Previsao } from '../../shared/models/previsao.model';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
+  private readonly seo = inject(SeoService);
+  private readonly jsonLd = inject(JsonLdService);
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly destroy$ = new Subject<void>();
 
   protected medicao = signal<Medicao | null>(null);
@@ -101,56 +106,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected chartDataPrecip: ChartConfiguration['data'] = { labels: [], datasets: [] };
 
   ngOnInit(): void {
-    timer(0, environment.refreshIntervalMs)
-      .pipe(
-        switchMap(() => {
-          this.loadingDados.set(true);
-          this.loadingPrevisao.set(true);
-          this.loadingEvolucao.set(true);
-          this.errorDados.set(false);
-          this.errorPrevisao.set(false);
-          this.errorEvolucao.set(false);
-          return forkJoin({
-            medicao: this.api.getUltimaMedicao().pipe(
-              catchError(() => {
-                this.errorDados.set(true);
-                return of(null as Medicao | null);
-              }),
-            ),
-            previsao: this.api.getPrevisao().pipe(
-              catchError(() => {
-                this.errorPrevisao.set(true);
-                return of(null as Previsao | null);
-              }),
-            ),
-            medicoes: this.api.getMedicoesPorData(this.dataSelecionada()).pipe(
-              catchError(() => {
-                this.errorEvolucao.set(true);
-                return of(null as Medicao[] | null);
-              }),
-            ),
-          });
-        }),
-        takeUntil(this.destroy$),
-      )
-      .subscribe({
-        next: ({ medicao, previsao, medicoes }) => {
-          if (medicao !== null) this.medicao.set(medicao);
-          if (previsao !== null) this.previsao.set(previsao);
-          if (medicoes !== null) {
-            this.medicoes.set(medicoes);
-            this.atualizarCharts(medicoes);
-          }
-          this.loadingDados.set(false);
-          this.loadingPrevisao.set(false);
-          this.loadingEvolucao.set(false);
-        },
-        error: () => {
-          this.loadingDados.set(false);
-          this.loadingPrevisao.set(false);
-          this.loadingEvolucao.set(false);
-        },
-      });
+    this.seo.update({
+      title: 'Estação Meteorológica — Dados em Tempo Real',
+      description:
+        'Monitoramento meteorológico em tempo real com dados de temperatura, umidade, pressão atmosférica e precipitação. Previsão de chuva e evolução diária.',
+      keywords:
+        'estação meteorológica, tempo, temperatura, umidade, pressão atmosférica, precipitação, previsão de chuva, clima, dados meteorológicos',
+    });
+
+    this.jsonLd.setWebApplication();
+
+    this.fetchAllData();
+
+    if (isPlatformBrowser(this.platformId)) {
+      timer(environment.refreshIntervalMs, environment.refreshIntervalMs)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => this.fetchAllData());
+    }
   }
 
   ngOnDestroy(): void {
@@ -164,6 +136,60 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected onDataChange(): void {
     this.carregar();
+  }
+
+  private fetchAllData(): void {
+    this.loadingDados.set(true);
+    this.loadingPrevisao.set(true);
+    this.loadingEvolucao.set(true);
+    this.errorDados.set(false);
+    this.errorPrevisao.set(false);
+    this.errorEvolucao.set(false);
+
+    forkJoin({
+      medicao: this.api.getUltimaMedicao().pipe(
+        catchError(() => {
+          this.errorDados.set(true);
+          return of(null as Medicao | null);
+        }),
+      ),
+      previsao: this.api.getPrevisao().pipe(
+        catchError(() => {
+          this.errorPrevisao.set(true);
+          return of(null as Previsao | null);
+        }),
+      ),
+      medicoes: this.api.getMedicoesPorData(this.dataSelecionada()).pipe(
+        catchError(() => {
+          this.errorEvolucao.set(true);
+          return of(null as Medicao[] | null);
+        }),
+      ),
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ medicao, previsao, medicoes }) => {
+          if (medicao !== null) {
+            this.medicao.set(medicao);
+            this.jsonLd.setWeatherObservation(medicao);
+          }
+          if (previsao !== null) this.previsao.set(previsao);
+          if (medicoes !== null) {
+            this.medicoes.set(medicoes);
+            if (isPlatformBrowser(this.platformId)) {
+              this.atualizarCharts(medicoes);
+            }
+          }
+          this.loadingDados.set(false);
+          this.loadingPrevisao.set(false);
+          this.loadingEvolucao.set(false);
+        },
+        error: () => {
+          this.loadingDados.set(false);
+          this.loadingPrevisao.set(false);
+          this.loadingEvolucao.set(false);
+        },
+      });
   }
 
   private carregar(): void {

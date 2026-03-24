@@ -1,0 +1,22 @@
+# Estação Meteorológica
+
+> Estação meteorológica com monitoramento em tempo real de condições climáticas.
+
+Esta aplicação web exibe dados meteorológicos coletados por uma estação física, incluindo temperatura, umidade relativa do ar, pressão atmosférica e precipitação. Também oferece previsão de chuva baseada em modelo de machine learning.
+
+## Dados Disponíveis
+
+- Temperatura atual (°C)
+- Umidade relativa do ar (%)
+- Pressão atmosférica (hPa/mbar)
+- Precipitação (mm)
+- Previsão de probabilidade de chuva para a próxima hora
+- Evolução histórica dos dados ao longo do dia com valores máximos e mínimos
+
+## Detalhes
+
+- URL: https://tempo.kadupenido.com
+- Idioma: Português (Brasil)
+- Atualização: dados atualizados a cada 5 minutos
+- Fuso horário: America/Sao_Paulo (UTC-3)
+- Informações completas: [llms-full.txt](https://tempo.kadupenido.com/llms-full.txt)

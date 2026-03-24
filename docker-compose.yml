@@ -1,0 +1,15 @@
+name: estacao-meteorologica-web
+
+services:
+  web:
+    container_name: estacao-meteorologica-web
+    build: .
+    environment:
+      - PORT=4000
+      - API_UPSTREAM=http://estacao-meteorologica-api:8000
+    networks:
+      - web
+
+networks:
+  web:
+    external: true

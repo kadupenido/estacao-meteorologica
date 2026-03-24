@@ -166,26 +166,34 @@
         <div class="chart-container">
           <h3 class="chart-title">Temperatura (°C)</h3>
           <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataTemp" [options]="chartOptions" type="line"></canvas>
+            <canvas baseChart [data]="chartDataTemp" [options]="chartOptions" type="line"
+              role="img" aria-label="Gráfico de evolução da temperatura ao longo do dia em graus Celsius"></canvas>
           </div>
+          <p class="sr-only">Gráfico de linha mostrando a variação da temperatura ao longo do dia selecionado.</p>
         </div>
         <div class="chart-container">
           <h3 class="chart-title">Umidade (%)</h3>
           <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataUmid" [options]="chartOptions" type="line"></canvas>
+            <canvas baseChart [data]="chartDataUmid" [options]="chartOptions" type="line"
+              role="img" aria-label="Gráfico de evolução da umidade relativa ao longo do dia em porcentagem"></canvas>
           </div>
+          <p class="sr-only">Gráfico de linha mostrando a variação da umidade relativa do ar ao longo do dia selecionado.</p>
         </div>
         <div class="chart-container">
           <h3 class="chart-title">Pressão (hPa)</h3>
           <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataPress" [options]="chartOptions" type="line"></canvas>
+            <canvas baseChart [data]="chartDataPress" [options]="chartOptions" type="line"
+              role="img" aria-label="Gráfico de evolução da pressão atmosférica ao longo do dia em hectopascais"></canvas>
           </div>
+          <p class="sr-only">Gráfico de linha mostrando a variação da pressão atmosférica ao longo do dia selecionado.</p>
         </div>
         <div class="chart-container">
           <h3 class="chart-title">Precipitação (mm)</h3>
           <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataPrecip" [options]="chartOptions" type="line"></canvas>
+            <canvas baseChart [data]="chartDataPrecip" [options]="chartOptions" type="line"
+              role="img" aria-label="Gráfico de evolução da precipitação ao longo do dia em milímetros"></canvas>
           </div>
+          <p class="sr-only">Gráfico de linha mostrando a variação da precipitação ao longo do dia selecionado.</p>
         </div>
       </div>
     }

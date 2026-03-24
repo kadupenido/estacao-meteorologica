@@ -1,0 +1,74 @@
+# Estação Meteorológica — Documentação Completa
+
+> Estação meteorológica com monitoramento em tempo real de condições climáticas.
+
+## Visão Geral
+
+Esta aplicação web exibe dados meteorológicos coletados por uma estação meteorológica física. Os sensores medem temperatura, umidade relativa do ar, pressão atmosférica e precipitação. Os dados são transmitidos para um servidor backend que os armazena e disponibiliza via API REST.
+
+A aplicação também conta com um modelo de machine learning que prevê a probabilidade de chuva para a próxima hora em diferentes horizontes temporais.
+
+## Dados Disponíveis
+
+### Medição Atual
+- **Temperatura**: valor em graus Celsius (°C), medido por sensor digital
+- **Umidade relativa do ar**: percentual (%), medido por sensor digital
+- **Pressão atmosférica**: valor em hectopascais (hPa) ou milibares (mbar)
+- **Precipitação**: volume em milímetros (mm), convertido a partir de leitura analógica do sensor de chuva
+
+### Previsão de Chuva
+- Probabilidade de chuva para a próxima hora
+- Previsões em diferentes horizontes temporais (ex: 10min, 20min, 30min, 40min, 50min, 60min)
+- Baseada em modelo de machine learning treinado com dados históricos da estação
+
+### Evolução Diária
+- Gráficos de linha mostrando a evolução de temperatura, umidade, pressão e precipitação ao longo do dia
+- Valores máximos e mínimos de cada grandeza para o dia selecionado
+- Possibilidade de selecionar datas anteriores para consulta de histórico
+
+## API REST
+
+A estação meteorológica disponibiliza dados via API REST:
+
+- `GET /api/dados/ultima` — Retorna a última medição registrada
+- `GET /api/dados/por-data?data=YYYY-MM-DD` — Retorna todas as medições de um dia específico
+- `GET /api/previsao` — Retorna a previsão de chuva atual
+
+### Formato dos Dados
+
+Medição:
+```json
+{
+  "id": 1,
+  "temperatura": 25.3,
+  "umidade": 68.5,
+  "pressao": 1013,
+  "precipitacao": 0.0,
+  "created_at": "2026-03-23T15:30:00Z"
+}
+```
+
+Previsão:
+```json
+{
+  "referencia": "2026-03-23T15:30:00Z",
+  "previsoes": [
+    {
+      "horizonte": "10 min",
+      "probabilidade": 0.15,
+      "previsao": "sem chuva",
+      "threshold": 0.5
+    }
+  ]
+}
+```
+
+## Informações Técnicas
+
+- **URL**: https://tempo.kadupenido.com
+- **Frontend**: Angular 21 com Server-Side Rendering (SSR)
+- **Backend**: Python (FastAPI)
+- **Idioma**: Português (Brasil)
+- **Fuso horário**: America/Sao_Paulo (UTC-3)
+- **Frequência de atualização**: a cada 5 minutos
+- **Unidades**: Sistema Internacional (SI)
