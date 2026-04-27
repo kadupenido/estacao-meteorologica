@@ -3,6 +3,5 @@ export interface Medicao {
   temperatura: number;
   umidade: number;
   pressao: number;
-  precipitacao: number;
   created_at: string;
 }

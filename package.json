@@ -1,5 +1,5 @@
 {
-  "name": "estacao-meteorologica",
+  "name": "monitor-ambiental",
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,8 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:estacao-meteorologica": "node dist/estacao-meteorologica/server/server.mjs",
-    "serve:ssr": "node dist/estacao-meteorologica/server/server.mjs"
+    "serve:ssr:monitor-ambiental": "node dist/monitor-ambiental/server/server.mjs",
+    "serve:ssr": "node dist/monitor-ambiental/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,

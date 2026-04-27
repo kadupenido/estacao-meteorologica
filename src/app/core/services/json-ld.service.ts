@@ -13,11 +13,11 @@ export class JsonLdService {
     this.setSchema({
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'Estação Meteorológica',
+      name: 'Monitor Ambiental',
       url: environment.siteUrl,
       description:
-        'Monitoramento meteorológico em tempo real com dados de temperatura, umidade, pressão atmosférica e precipitação.',
-      applicationCategory: 'WeatherApplication',
+        'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica.',
+      applicationCategory: 'UtilityApplication',
       operatingSystem: 'Web',
       inLanguage: 'pt-BR',
       offers: {
@@ -34,11 +34,11 @@ export class JsonLdService {
       '@graph': [
         {
           '@type': 'WebApplication',
-          name: 'Estação Meteorológica',
+          name: 'Monitor Ambiental',
           url: environment.siteUrl,
           description:
-            'Monitoramento meteorológico em tempo real com dados de temperatura, umidade, pressão atmosférica e precipitação.',
-          applicationCategory: 'WeatherApplication',
+            'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica.',
+          applicationCategory: 'UtilityApplication',
           operatingSystem: 'Web',
           inLanguage: 'pt-BR',
           offers: {
@@ -49,7 +49,7 @@ export class JsonLdService {
         },
         {
           '@type': 'Observation',
-          name: 'Medição meteorológica atual',
+          name: 'Medição ambiental atual',
           observationDate: medicao.created_at,
           measuredProperty: [
             {

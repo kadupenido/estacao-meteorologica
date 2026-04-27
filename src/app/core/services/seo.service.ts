@@ -41,7 +41,7 @@ export class SeoService {
     this.meta.updateTag({ property: 'og:type', content: config.ogType ?? 'website' });
     this.meta.updateTag({ property: 'og:url', content: environment.siteUrl });
     this.meta.updateTag({ property: 'og:locale', content: 'pt_BR' });
-    this.meta.updateTag({ property: 'og:site_name', content: 'Estação Meteorológica' });
+    this.meta.updateTag({ property: 'og:site_name', content: 'Monitor Ambiental' });
 
     if (config.ogImage) {
       this.meta.updateTag({ property: 'og:image', content: config.ogImage });

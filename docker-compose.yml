@@ -1,12 +1,12 @@
-name: estacao-meteorologica-web
+name: monitor-ambiental-web
 
 services:
   web:
-    container_name: estacao-meteorologica-web
+    container_name: monitor-ambiental-web
     build: .
     environment:
       - PORT=4000
-      - API_UPSTREAM=http://estacao-meteorologica-api:8000
+      - API_UPSTREAM=http://monitor-ambiental-api:8000
     networks:
       - web
 

@@ -9,7 +9,7 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
-const apiUpstream = process.env['API_UPSTREAM'] || 'http://estacao-meteorologica-api:8000';
+const apiUpstream = process.env['API_UPSTREAM'] || 'http://monitor-ambiental-api:8000';
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();

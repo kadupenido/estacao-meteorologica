@@ -1,16 +1,14 @@
-# Estação Meteorológica
+# Monitor Ambiental
 
-> Estação meteorológica com monitoramento em tempo real de condições climáticas.
+> Monitoramento em tempo real de condições ambientais.
 
-Esta aplicação web exibe dados meteorológicos coletados por uma estação física, incluindo temperatura, umidade relativa do ar, pressão atmosférica e precipitação. Também oferece previsão de chuva baseada em modelo de machine learning.
+Esta aplicação web exibe dados coletados por sensores (temperatura, umidade relativa do ar e pressão atmosférica).
 
 ## Dados Disponíveis
 
 - Temperatura atual (°C)
 - Umidade relativa do ar (%)
 - Pressão atmosférica (hPa/mbar)
-- Precipitação (mm)
-- Previsão de probabilidade de chuva para a próxima hora
 - Evolução histórica dos dados ao longo do dia com valores máximos e mínimos
 
 ## Detalhes

@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "estacao-meteorologica": {
+    "monitor-ambiental": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -79,10 +79,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "estacao-meteorologica:build:production"
+              "buildTarget": "monitor-ambiental:build:production"
             },
             "development": {
-              "buildTarget": "estacao-meteorologica:build:development"
+              "buildTarget": "monitor-ambiental:build:development"
             }
           },
           "defaultConfiguration": "development"

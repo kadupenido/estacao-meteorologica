@@ -1,17 +1,15 @@
 import { Component, OnInit, OnDestroy, PLATFORM_ID, signal, inject, computed } from '@angular/core';
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { timer, switchMap, Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
+import { timer, Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
 
 import { ApiService } from '../../core/services/api.service';
 import { SeoService } from '../../core/services/seo.service';
 import { JsonLdService } from '../../core/services/json-ld.service';
-import { adcParaMm } from '../../core/utils/precipitacao-mm';
 import { environment } from '../../../environments/environment';
 import type { Medicao } from '../../shared/models/medicao.model';
-import type { Previsao } from '../../shared/models/previsao.model';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,11 +26,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   protected medicao = signal<Medicao | null>(null);
-  protected previsao = signal<Previsao | null>(null);
   protected loadingDados = signal(true);
-  protected loadingPrevisao = signal(true);
   protected errorDados = signal(false);
-  protected errorPrevisao = signal(false);
 
   protected dataSelecionada = signal<string>(this.hoje());
   protected medicoes = signal<Medicao[]>([]);
@@ -45,9 +40,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const temps = m.map((x) => x.temperatura);
     const umids = m.map((x) => x.umidade);
     const press = m.map((x) => x.pressao);
-    const precs = m.map((x) =>
-      adcParaMm(x.precipitacao, environment.rainPowerA, environment.rainPowerB),
-    );
     return {
       tempMin: Math.min(...temps),
       tempMax: Math.max(...temps),
@@ -55,8 +47,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       umidMax: Math.max(...umids),
       pressMin: Math.min(...press),
       pressMax: Math.max(...press),
-      precipMin: Math.min(...precs),
-      precipMax: Math.max(...precs),
     };
   });
 
@@ -103,15 +93,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected chartDataTemp: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataUmid: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPress: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataPrecip: ChartConfiguration['data'] = { labels: [], datasets: [] };
 
   ngOnInit(): void {
     this.seo.update({
-      title: 'Estação Meteorológica — Dados em Tempo Real',
+      title: 'Monitor Ambiental — Dados em Tempo Real',
       description:
-        'Monitoramento meteorológico em tempo real com dados de temperatura, umidade, pressão atmosférica e precipitação. Previsão de chuva e evolução diária.',
+        'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica, com evolução diária e gráficos.',
       keywords:
-        'estação meteorológica, tempo, temperatura, umidade, pressão atmosférica, precipitação, previsão de chuva, clima, dados meteorológicos',
+        'monitor ambiental, temperatura, umidade, pressão atmosférica, sensores, dados ambientais',
     });
 
     this.jsonLd.setWebApplication();
@@ -140,10 +129,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private fetchAllData(): void {
     this.loadingDados.set(true);
-    this.loadingPrevisao.set(true);
     this.loadingEvolucao.set(true);
     this.errorDados.set(false);
-    this.errorPrevisao.set(false);
     this.errorEvolucao.set(false);
 
     forkJoin({
@@ -151,12 +138,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         catchError(() => {
           this.errorDados.set(true);
           return of(null as Medicao | null);
-        }),
-      ),
-      previsao: this.api.getPrevisao().pipe(
-        catchError(() => {
-          this.errorPrevisao.set(true);
-          return of(null as Previsao | null);
         }),
       ),
       medicoes: this.api.getMedicoesPorData(this.dataSelecionada()).pipe(
@@ -168,12 +149,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ medicao, previsao, medicoes }) => {
+        next: ({ medicao, medicoes }) => {
           if (medicao !== null) {
             this.medicao.set(medicao);
             this.jsonLd.setWeatherObservation(medicao);
           }
-          if (previsao !== null) this.previsao.set(previsao);
           if (medicoes !== null) {
             this.medicoes.set(medicoes);
             if (isPlatformBrowser(this.platformId)) {
@@ -181,12 +161,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
             }
           }
           this.loadingDados.set(false);
-          this.loadingPrevisao.set(false);
           this.loadingEvolucao.set(false);
         },
         error: () => {
           this.loadingDados.set(false);
-          this.loadingPrevisao.set(false);
           this.loadingEvolucao.set(false);
         },
       });
@@ -248,25 +226,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       pointHoverRadius: 6,
       pointHoverBackgroundColor: '#a78bfa',
     };
-    const dsPrecip: ChartDataset<'line'> = {
-      data: meds.map((m) =>
-        adcParaMm(m.precipitacao, environment.rainPowerA, environment.rainPowerB),
-      ),
-      label: 'Precipitação (mm)',
-      borderColor: '#38bdf8',
-      backgroundColor: 'rgba(56, 189, 248, 0.25)',
-      fill: true,
-      tension: 0.4,
-      borderWidth: 2.5,
-      pointRadius: 0,
-      pointHoverRadius: 6,
-      pointHoverBackgroundColor: '#38bdf8',
-    };
 
     this.chartDataTemp = { labels, datasets: [dsTemp] };
     this.chartDataUmid = { labels, datasets: [dsUmid] };
     this.chartDataPress = { labels, datasets: [dsPress] };
-    this.chartDataPrecip = { labels, datasets: [dsPrecip] };
   }
 
   private formatarHora(iso: string): string {
@@ -302,14 +265,5 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } catch {
       return '-';
     }
-  }
-
-  protected probPercent(prob: number): number {
-    return Math.round(prob * 100);
-  }
-
-  /** Mesma conversão ADC→mm usada em api/app/ml/preprocessing.py antes do modelo. */
-  protected precipitacaoMm(valorAdc: number): number {
-    return adcParaMm(valorAdc, environment.rainPowerA, environment.rainPowerB);
   }
 }
