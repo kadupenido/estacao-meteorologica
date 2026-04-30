@@ -218,6 +218,12 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
+
+  // Quando há um número ímpar de cards, faz o último ocupar a linha inteira
+  // (em telas largas com 2 colunas) — evita um espaço vazio à direita.
+  .chart-container:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 
 .chart-container {

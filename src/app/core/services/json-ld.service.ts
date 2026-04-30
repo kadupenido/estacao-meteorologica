@@ -4,6 +4,16 @@ import { DOCUMENT } from '@angular/common';
 import { environment } from '../../../environments/environment';
 import type { Medicao } from '../../shared/models/medicao.model';
 
+function isNum(v: number | null | undefined): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+function avg(...vals: Array<number | null | undefined>): number | null {
+  const nums = vals.filter(isNum);
+  if (nums.length === 0) return null;
+  return nums.reduce((s, n) => s + n, 0) / nums.length;
+}
+
 @Injectable({ providedIn: 'root' })
 export class JsonLdService {
   private readonly doc = inject(DOCUMENT);
@@ -16,7 +26,7 @@ export class JsonLdService {
       name: 'Monitor Ambiental',
       url: environment.siteUrl,
       description:
-        'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica.',
+        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica, tensão da bateria e do painel solar.',
       applicationCategory: 'UtilityApplication',
       operatingSystem: 'Web',
       inLanguage: 'pt-BR',
@@ -29,6 +39,58 @@ export class JsonLdService {
   }
 
   setWeatherObservation(medicao: Medicao): void {
+    const tempAvg =
+      avg(medicao.temperatura_bme, medicao.temperatura_sht) ?? medicao.temperatura ?? null;
+    const umidAvg = avg(medicao.umidade_bme, medicao.umidade_sht) ?? medicao.umidade ?? null;
+
+    const measuredProperty: object[] = [];
+
+    if (isNum(tempAvg)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Temperatura',
+        value: tempAvg,
+        unitText: '°C',
+        unitCode: 'CEL',
+      });
+    }
+    if (isNum(umidAvg)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Umidade relativa',
+        value: umidAvg,
+        unitText: '%',
+        unitCode: 'P1',
+      });
+    }
+    if (isNum(medicao.pressao)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Pressão atmosférica',
+        value: medicao.pressao,
+        unitText: 'hPa',
+        unitCode: 'A97',
+      });
+    }
+    if (isNum(medicao.tensao_bateria)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Tensão da bateria',
+        value: medicao.tensao_bateria,
+        unitText: 'V',
+        unitCode: 'VLT',
+      });
+    }
+    if (isNum(medicao.tensao_painel)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Tensão do painel solar',
+        value: medicao.tensao_painel,
+        unitText: 'V',
+        unitCode: 'VLT',
+      });
+    }
+
     this.setSchema({
       '@context': 'https://schema.org',
       '@graph': [
@@ -37,7 +99,7 @@ export class JsonLdService {
           name: 'Monitor Ambiental',
           url: environment.siteUrl,
           description:
-            'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica.',
+            'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica, tensão da bateria e do painel solar.',
           applicationCategory: 'UtilityApplication',
           operatingSystem: 'Web',
           inLanguage: 'pt-BR',
@@ -51,29 +113,7 @@ export class JsonLdService {
           '@type': 'Observation',
           name: 'Medição ambiental atual',
           observationDate: medicao.created_at,
-          measuredProperty: [
-            {
-              '@type': 'PropertyValue',
-              name: 'Temperatura',
-              value: medicao.temperatura,
-              unitText: '°C',
-              unitCode: 'CEL',
-            },
-            {
-              '@type': 'PropertyValue',
-              name: 'Umidade relativa',
-              value: medicao.umidade,
-              unitText: '%',
-              unitCode: 'P1',
-            },
-            {
-              '@type': 'PropertyValue',
-              name: 'Pressão atmosférica',
-              value: medicao.pressao,
-              unitText: 'hPa',
-              unitCode: 'A97',
-            },
-          ],
+          measuredProperty,
         },
       ],
     });
