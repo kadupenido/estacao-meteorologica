@@ -1,0 +1,28 @@
+{
+  "name": "Monitor Ambiental",
+  "short_name": "Monitor",
+  "description": "Monitoramento em tempo real de temperatura, umidade, pressão atmosférica, tensão da bateria e do painel solar.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1419",
+  "theme_color": "#0f1419",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["weather", "utilities"],
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

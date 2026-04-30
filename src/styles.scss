@@ -4,11 +4,36 @@
   --card-bg: var(--bg-card);
   --card-border: rgba(255, 255, 255, 0.08);
   --text-primary: #f0f2f5;
-  --text-secondary: #a8b3b8;
-  --text-muted: #6b7680;
+  --text-secondary: #b8c2c8;
+  --text-muted: #8a96a0;
   --accent: #22d3ee;
   --accent-light: #67e8f9;
   --bar-bg: rgba(255, 255, 255, 0.08);
+
+  --status-ok: #34d399;
+  --status-warn: #fbbf24;
+  --status-crit: #f87171;
+  --status-info: #60a5fa;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f5f7fa;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --card-bg: var(--bg-card);
+    --card-border: rgba(15, 20, 25, 0.08);
+    --text-primary: #0f1419;
+    --text-secondary: #475561;
+    --text-muted: #5b6770;
+    --accent: #0891b2;
+    --accent-light: #0e7490;
+    --bar-bg: rgba(15, 20, 25, 0.08);
+
+    --status-ok: #059669;
+    --status-warn: #d97706;
+    --status-crit: #dc2626;
+    --status-info: #2563eb;
+  }
 }
 
 *,
@@ -30,4 +55,50 @@ body {
   color: var(--text-primary);
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// Skip-link: aparece apenas ao receber foco via tab
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform 0.2s ease;
+
+  &:focus {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
