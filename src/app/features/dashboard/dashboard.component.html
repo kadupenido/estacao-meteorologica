@@ -2,8 +2,13 @@
   <header class="header">
     <div class="header-main">
       <h1 class="title">Monitor Ambiental</h1>
+      @if (location) {
+        <p class="location">{{ location }}</p>
+      }
       @if (medicao(); as m) {
         <p class="last-update" aria-live="polite">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="sr-only">Dados ao vivo. </span>
           Atualizado <span class="last-update-strong">{{ updatedAgo() ?? '-' }}</span>
           <span class="last-update-sep" aria-hidden="true">·</span>
           <span class="last-update-full">{{ formatarData(m.created_at) }}</span>
@@ -81,6 +86,13 @@
           </div>
           <div class="hero-meta">
             <span class="hero-label">Temperatura agora</span>
+            @if (trends()?.temp; as d) {
+              <span class="trend" [class.trend-up]="d > 0.1" [class.trend-down]="d < -0.1">
+                @if (d > 0.1) { ▲ } @else if (d < -0.1) { ▼ } @else { → }
+                {{ d > 0 ? '+' : '' }}{{ d | number:'1.1-1' }} °C
+                <span class="sr-only">na última hora</span>
+              </span>
+            }
           </div>
         </div>
       </div>
@@ -98,6 +110,13 @@
               @if (c.umidAvg !== null) { {{ c.umidAvg | number:'1.1-1' }} % } @else { - }
             </span>
             <span class="card-label">Umidade</span>
+            @if (trends()?.umid; as d) {
+              <span class="trend" [class.trend-up]="d > 0.5" [class.trend-down]="d < -0.5">
+                @if (d > 0.5) { ▲ } @else if (d < -0.5) { ▼ } @else { → }
+                {{ d > 0 ? '+' : '' }}{{ d | number:'1.1-1' }} %
+                <span class="sr-only">na última hora</span>
+              </span>
+            }
           </div>
         </div>
 
@@ -111,9 +130,16 @@
           </div>
           <div class="card-content">
             <span class="card-value">
-              @if (c.pressao !== null) { {{ c.pressao | number:'1.0-0' }} mbar } @else { - }
+              @if (c.pressao !== null) { {{ c.pressao | number:'1.0-0' }} hPa } @else { - }
             </span>
             <span class="card-label">Pressão</span>
+            @if (trends()?.pressao; as d) {
+              <span class="trend" [class.trend-up]="d > 0.5" [class.trend-down]="d < -0.5">
+                @if (d > 0.5) { ▲ } @else if (d < -0.5) { ▼ } @else { → }
+                {{ d > 0 ? '+' : '' }}{{ d | number:'1.0-0' }} hPa
+                <span class="sr-only">na última hora</span>
+              </span>
+            }
           </div>
         </div>
       </div>
@@ -211,10 +237,10 @@
               <span class="card-label">Pressão</span>
               <div class="card-values">
                 <span class="card-min">
-                  Mín: @if (mm.pressMin !== null) { {{ mm.pressMin | number:'1.0-0' }} mbar } @else { - }
+                  Mín: @if (mm.pressMin !== null) { {{ mm.pressMin | number:'1.0-0' }} hPa } @else { - }
                 </span>
                 <span class="card-max">
-                  Máx: @if (mm.pressMax !== null) { {{ mm.pressMax | number:'1.0-0' }} mbar } @else { - }
+                  Máx: @if (mm.pressMax !== null) { {{ mm.pressMax | number:'1.0-0' }} hPa } @else { - }
                 </span>
               </div>
             </div>
@@ -309,9 +335,9 @@
                   <table class="chart-summary">
                     <caption>Resumo da pressão no dia</caption>
                     <tbody>
-                      <tr><th scope="row">Mínima</th><td>{{ mm.pressMin !== null ? (mm.pressMin | number:'1.0-0') + ' mbar' : '-' }}</td></tr>
-                      <tr><th scope="row">Máxima</th><td>{{ mm.pressMax !== null ? (mm.pressMax | number:'1.0-0') + ' mbar' : '-' }}</td></tr>
-                      <tr><th scope="row">Última leitura</th><td>{{ current()?.pressao !== null && current()?.pressao !== undefined ? (current()!.pressao! | number:'1.0-0') + ' mbar' : '-' }}</td></tr>
+                      <tr><th scope="row">Mínima</th><td>{{ mm.pressMin !== null ? (mm.pressMin | number:'1.0-0') + ' hPa' : '-' }}</td></tr>
+                      <tr><th scope="row">Máxima</th><td>{{ mm.pressMax !== null ? (mm.pressMax | number:'1.0-0') + ' hPa' : '-' }}</td></tr>
+                      <tr><th scope="row">Última leitura</th><td>{{ current()?.pressao !== null && current()?.pressao !== undefined ? (current()!.pressao! | number:'1.0-0') + ' hPa' : '-' }}</td></tr>
                     </tbody>
                   </table>
                 }

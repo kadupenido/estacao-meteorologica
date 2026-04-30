@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { timer, Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
+import { timer, Subject, takeUntil, forkJoin, of, catchError, Subscription } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
 
@@ -90,6 +90,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { id: 'solar', label: 'Solar' },
   ];
 
+  protected readonly location = environment.location;
+
+  private pollingSub: Subscription | null = null;
+  private visibilityHandler: (() => void) | null = null;
+
   protected current = computed(() => {
     const m = this.medicao();
     if (!m) return null;
@@ -138,6 +143,40 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected isHoje = computed(() => this.dataSelecionada() === this.hoje());
   protected isOntem = computed(() => this.dataSelecionada() === this.ontem());
+
+  /**
+   * Compara a medição mais recente com uma de ~1h antes (ou a primeira do dia,
+   * se ainda não houver 1h de dados). Só calcula tendências para o dia atual.
+   */
+  protected trends = computed(() => {
+    if (!this.isHoje()) return null;
+    const cur = this.medicao();
+    const meds = this.medicoes();
+    if (!cur || meds.length < 2) return null;
+
+    const curTime = new Date(this.toUtcIso(cur.created_at)).getTime();
+    if (!Number.isFinite(curTime)) return null;
+    const target = curTime - 60 * 60 * 1000;
+
+    let prev: Medicao | null = null;
+    for (const m of meds) {
+      const t = new Date(this.toUtcIso(m.created_at)).getTime();
+      if (Number.isFinite(t) && t <= target) prev = m;
+    }
+    if (!prev) prev = meds[0];
+    if (!prev || prev.id === cur.id) return null;
+
+    const delta = (a: number | null, b: number | null) =>
+      isNum(a) && isNum(b) ? a - b : null;
+
+    return {
+      temp: delta(pickTemp(cur), pickTemp(prev)),
+      umid: delta(pickHum(cur), pickHum(prev)),
+      pressao: delta(cur.pressao, prev.pressao),
+      bateria: delta(cur.tensao_bateria, prev.tensao_bateria),
+      painel: delta(cur.tensao_painel, prev.tensao_painel),
+    };
+  });
 
   protected maxMin = computed(() => {
     const m = this.medicoes();
@@ -239,13 +278,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe(() => this.nowTick.set(Date.now()));
 
-      timer(environment.refreshIntervalMs, environment.refreshIntervalMs)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(() => this.fetchAllData());
+      this.startPolling();
+      this.visibilityHandler = () => {
+        if (document.hidden) {
+          this.stopPolling();
+        } else {
+          this.fetchAllData();
+          this.startPolling();
+        }
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
     }
   }
 
   ngOnDestroy(): void {
+    this.stopPolling();
+    if (this.visibilityHandler && isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
     this.destroy$.next();
     this.destroy$.complete();
     if (isPlatformBrowser(this.platformId)) {
@@ -305,6 +356,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } catch {
       return null;
     }
+  }
+
+  private startPolling(): void {
+    this.stopPolling();
+    this.pollingSub = timer(environment.refreshIntervalMs, environment.refreshIntervalMs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.fetchAllData());
+  }
+
+  private stopPolling(): void {
+    this.pollingSub?.unsubscribe();
+    this.pollingSub = null;
   }
 
   private hoje(): string {
@@ -599,12 +662,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     );
   }
 
+  private toUtcIso(iso: string): string {
+    return iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+  }
+
   private formatarHora(iso: string): string {
     try {
-      const isoUtc =
-        iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
-      const d = new Date(isoUtc);
-      return d.toLocaleTimeString('pt-BR', {
+      return new Date(this.toUtcIso(iso)).toLocaleTimeString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         hour: '2-digit',
         minute: '2-digit',
@@ -616,10 +680,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected formatarData(iso: string): string {
     try {
-      const isoUtc =
-        iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
-      const d = new Date(isoUtc);
-      return d.toLocaleString('pt-BR', {
+      return new Date(this.toUtcIso(iso)).toLocaleString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         day: '2-digit',
         month: '2-digit',
