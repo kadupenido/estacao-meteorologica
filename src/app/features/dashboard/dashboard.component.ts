@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, PLATFORM_ID, signal, inject, computed } from '@angular/core';
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { timer, Subject, takeUntil, forkJoin, of, catchError } from 'rxjs';
+import { timer, Subject, takeUntil, forkJoin, of, catchError, Subscription } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
 
@@ -52,6 +52,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected loadingEvolucao = signal(false);
   protected errorEvolucao = signal(false);
 
+  protected isHoje = computed(() => this.dataSelecionada() === this.hoje());
+
+  protected readonly location = environment.location;
+  protected readonly batteryWarn = environment.batteryWarnVoltage;
+  protected readonly batteryDanger = environment.batteryDangerVoltage;
+
+  protected activeTab = signal<'todos' | 'ambiente' | 'sistema'>('todos');
+
+  private pollingSub: Subscription | null = null;
+  private visibilityHandler: (() => void) | null = null;
+
   protected current = computed(() => {
     const m = this.medicao();
     if (!m) return null;
@@ -63,6 +74,48 @@ export class DashboardComponent implements OnInit, OnDestroy {
       tensao_painel: m.tensao_painel,
       created_at: m.created_at,
     };
+  });
+
+  /**
+   * Compara a medição mais recente com uma de ~1h antes (ou a primeira do dia,
+   * se ainda não houver 1h de dados). Só calcula tendências para o dia atual.
+   */
+  protected trends = computed(() => {
+    if (!this.isHoje()) return null;
+    const cur = this.medicao();
+    const meds = this.medicoes();
+    if (!cur || meds.length < 2) return null;
+
+    const curTime = new Date(this.toUtcIso(cur.created_at)).getTime();
+    if (!Number.isFinite(curTime)) return null;
+    const target = curTime - 60 * 60 * 1000;
+
+    let prev: Medicao | null = null;
+    for (const m of meds) {
+      const t = new Date(this.toUtcIso(m.created_at)).getTime();
+      if (Number.isFinite(t) && t <= target) prev = m;
+    }
+    if (!prev) prev = meds[0];
+    if (!prev || prev.id === cur.id) return null;
+
+    const delta = (a: number | null, b: number | null) =>
+      isNum(a) && isNum(b) ? a - b : null;
+
+    return {
+      temp: delta(pickTemp(cur), pickTemp(prev)),
+      umid: delta(pickHum(cur), pickHum(prev)),
+      pressao: delta(cur.pressao, prev.pressao),
+      bateria: delta(cur.tensao_bateria, prev.tensao_bateria),
+      painel: delta(cur.tensao_painel, prev.tensao_painel),
+    };
+  });
+
+  protected batteryStatus = computed<'ok' | 'warn' | 'danger'>(() => {
+    const v = this.medicao()?.tensao_bateria;
+    if (!isNum(v)) return 'ok';
+    if (v < this.batteryDanger) return 'danger';
+    if (v < this.batteryWarn) return 'warn';
+    return 'ok';
   });
 
   protected maxMin = computed(() => {
@@ -113,7 +166,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       x: {
         grid: { display: false },
         ticks: {
-          color: 'var(--text-muted)',
+          color: '#a8b3b8',
           maxTicksLimit: 8,
           font: { size: 11 },
         },
@@ -121,7 +174,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       y: {
         grid: { color: 'rgba(255, 255, 255, 0.05)' },
         ticks: {
-          color: 'var(--text-muted)',
+          color: '#a8b3b8',
           font: { size: 11 },
         },
         border: { display: false },
@@ -140,7 +193,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         position: 'top',
         align: 'end',
         labels: {
-          color: 'var(--text-secondary)',
+          color: '#a8b3b8',
           boxWidth: 12,
           boxHeight: 12,
           padding: 12,
@@ -172,19 +225,64 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.fetchAllData();
 
     if (isPlatformBrowser(this.platformId)) {
-      timer(environment.refreshIntervalMs, environment.refreshIntervalMs)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(() => this.fetchAllData());
+      this.startPolling();
+      this.visibilityHandler = () => {
+        if (document.hidden) {
+          this.stopPolling();
+        } else {
+          this.fetchAllData();
+          this.startPolling();
+        }
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
     }
   }
 
   ngOnDestroy(): void {
+    this.stopPolling();
+    if (this.visibilityHandler && isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  private startPolling(): void {
+    this.stopPolling();
+    this.pollingSub = timer(environment.refreshIntervalMs, environment.refreshIntervalMs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.fetchAllData());
+  }
+
+  private stopPolling(): void {
+    this.pollingSub?.unsubscribe();
+    this.pollingSub = null;
+  }
+
   private hoje(): string {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+  }
+
+  private addDays(yyyymmdd: string, n: number): string {
+    const [y, m, d] = yyyymmdd.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    date.setUTCDate(date.getUTCDate() + n);
+    const yy = date.getUTCFullYear();
+    const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(date.getUTCDate()).padStart(2, '0');
+    return `${yy}-${mm}-${dd}`;
+  }
+
+  protected diaAnterior(): void {
+    this.dataSelecionada.set(this.addDays(this.dataSelecionada(), -1));
+    this.carregar();
+  }
+
+  protected diaSeguinte(): void {
+    if (this.isHoje()) return;
+    this.dataSelecionada.set(this.addDays(this.dataSelecionada(), 1));
+    this.carregar();
   }
 
   protected onDataChange(): void {
@@ -289,18 +387,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
         isNum(m.umidade_bme) ? m.umidade_bme : isNum(m.umidade) ? m.umidade : null,
       ) as (number | null)[],
       label: 'BME280',
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.2)',
-      pointHoverBackgroundColor: '#3b82f6',
+      borderColor: '#22d3ee',
+      backgroundColor: 'rgba(34, 211, 238, 0.2)',
+      pointHoverBackgroundColor: '#22d3ee',
       fill: false,
     };
     const dsUmidSht: ChartDataset<'line'> = {
       ...baseLine,
       data: meds.map((m) => (isNum(m.umidade_sht) ? m.umidade_sht : null)) as (number | null)[],
       label: 'SHT31',
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.2)',
-      pointHoverBackgroundColor: '#10b981',
+      borderColor: '#f59e0b',
+      backgroundColor: 'rgba(245, 158, 11, 0.2)',
+      pointHoverBackgroundColor: '#f59e0b',
       fill: false,
     };
 
@@ -341,11 +439,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.chartDataSolar = { labels, datasets: [dsSolar] };
   }
 
+  private toUtcIso(iso: string): string {
+    return iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+  }
+
   private formatarHora(iso: string): string {
     try {
-      const isoUtc = iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
-      const d = new Date(isoUtc);
-      return d.toLocaleTimeString('pt-BR', {
+      return new Date(this.toUtcIso(iso)).toLocaleTimeString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         hour: '2-digit',
         minute: '2-digit',
@@ -361,9 +461,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected formatarData(iso: string): string {
     try {
-      const isoUtc = iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
-      const d = new Date(isoUtc);
-      return d.toLocaleString('pt-BR', {
+      return new Date(this.toUtcIso(iso)).toLocaleString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         day: '2-digit',
         month: '2-digit',
@@ -374,5 +472,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } catch {
       return '-';
     }
+  }
+
+  protected setTab(tab: 'todos' | 'ambiente' | 'sistema'): void {
+    this.activeTab.set(tab);
   }
 }

@@ -2,18 +2,31 @@
   <header class="header">
     <div>
       <h1 class="title">Monitor Ambiental</h1>
+      @if (location) {
+        <p class="location">{{ location }}</p>
+      }
       @if (medicao(); as m) {
-        <p class="last-update">Última atualização: {{ formatarData(m.created_at) }}</p>
+        <p class="last-update">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="sr-only">Dados ao vivo. </span>
+          Última atualização: {{ formatarData(m.created_at) }}
+        </p>
       }
     </div>
   </header>
 
   <section class="current-data">
-    <h2 class="section-title">Dados atuais</h2>
+    <h2 class="section-title">Ambiente</h2>
     @if (loadingDados()) {
-      <div class="cards-grid">
-        @for (i of [1,2,3,4,5]; track i) {
-          <div class="card card-skeleton"></div>
+      <div class="cards-grid" aria-busy="true" aria-label="Carregando dados">
+        @for (i of [1,2,3]; track i) {
+          <div class="card card-skeleton" aria-hidden="true">
+            <div class="skeleton-icon"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-bar skeleton-bar-value"></div>
+              <div class="skeleton-bar skeleton-bar-label"></div>
+            </div>
+          </div>
         }
       </div>
     } @else if (errorDados()) {
@@ -31,6 +44,13 @@
               @if (c.tempAvg !== null) { {{ c.tempAvg | number:'1.1-1' }} °C } @else { - }
             </span>
             <span class="card-label">Temperatura (média)</span>
+            @if (trends()?.temp; as d) {
+              <span class="trend" [class.trend-up]="d > 0.1" [class.trend-down]="d < -0.1">
+                @if (d > 0.1) { ▲ } @else if (d < -0.1) { ▼ } @else { → }
+                {{ d > 0 ? '+' : '' }}{{ d | number:'1.1-1' }} °C
+                <span class="sr-only">na última hora</span>
+              </span>
+            }
           </div>
         </div>
         <div class="card">
@@ -44,6 +64,13 @@
               @if (c.umidAvg !== null) { {{ c.umidAvg | number:'1.1-1' }} % } @else { - }
             </span>
             <span class="card-label">Umidade (média)</span>
+            @if (trends()?.umid; as d) {
+              <span class="trend" [class.trend-up]="d > 0.5" [class.trend-down]="d < -0.5">
+                @if (d > 0.5) { ▲ } @else if (d < -0.5) { ▼ } @else { → }
+                {{ d > 0 ? '+' : '' }}{{ d | number:'1.1-1' }} %
+                <span class="sr-only">na última hora</span>
+              </span>
+            }
           </div>
         </div>
         <div class="card">
@@ -55,12 +82,31 @@
           </div>
           <div class="card-content">
             <span class="card-value">
-              @if (c.pressao !== null) { {{ c.pressao | number:'1.0-0' }} mbar } @else { - }
+              @if (c.pressao !== null) { {{ c.pressao | number:'1.0-0' }} hPa } @else { - }
             </span>
             <span class="card-label">Pressão</span>
+            @if (trends()?.pressao; as d) {
+              <span class="trend" [class.trend-up]="d > 0.5" [class.trend-down]="d < -0.5">
+                @if (d > 0.5) { ▲ } @else if (d < -0.5) { ▼ } @else { → }
+                {{ d > 0 ? '+' : '' }}{{ d | number:'1.0-0' }} hPa
+                <span class="sr-only">na última hora</span>
+              </span>
+            }
           </div>
         </div>
-        <div class="card">
+      </div>
+    } @else {
+      <div class="empty-message">Nenhuma medição disponível.</div>
+    }
+
+    @if (current(); as c) {
+      <h2 class="section-title section-title-system">Sistema</h2>
+      <div class="cards-grid system-grid">
+        <div
+          class="card"
+          [class.card-warn]="batteryStatus() === 'warn'"
+          [class.card-danger]="batteryStatus() === 'danger'"
+        >
           <div class="card-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="2" y="7" width="18" height="10" rx="2" ry="2"/>
@@ -75,6 +121,11 @@
               @if (c.tensao_bateria !== null) { {{ c.tensao_bateria | number:'1.2-2' }} V } @else { - }
             </span>
             <span class="card-label">Bateria</span>
+            @if (batteryStatus() === 'danger') {
+              <span class="card-status card-status-danger">⚠ Tensão crítica</span>
+            } @else if (batteryStatus() === 'warn') {
+              <span class="card-status card-status-warn">Tensão baixa</span>
+            }
           </div>
         </div>
         <div class="card">
@@ -99,8 +150,6 @@
           </div>
         </div>
       </div>
-    } @else {
-      <div class="empty-message">Nenhuma medição disponível.</div>
     }
   </section>
 
@@ -108,13 +157,36 @@
     <h2 class="section-title">Evolução ao longo do dia</h2>
     <div class="date-picker-section">
       <label for="data-evolucao" class="date-label">Selecione a data</label>
-      <input
-        id="data-evolucao"
-        type="date"
-        class="date-input"
-        [ngModel]="dataSelecionada()"
-        (ngModelChange)="dataSelecionada.set($event); onDataChange()"
-      />
+      <div class="date-controls">
+        <button
+          type="button"
+          class="btn-date-nav"
+          aria-label="Dia anterior"
+          (click)="diaAnterior()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <input
+          id="data-evolucao"
+          type="date"
+          class="date-input"
+          [ngModel]="dataSelecionada()"
+          (ngModelChange)="dataSelecionada.set($event); onDataChange()"
+        />
+        <button
+          type="button"
+          class="btn-date-nav"
+          aria-label="Dia seguinte"
+          [disabled]="isHoje()"
+          (click)="diaSeguinte()"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
     </div>
 
     @if (loadingEvolucao()) {
@@ -130,118 +202,153 @@
     } @else if (medicoes().length === 0) {
       <div class="empty-message">Nenhuma medição encontrada para esta data.</div>
     } @else {
+      <div class="tabs" role="tablist" aria-label="Filtrar gráficos por categoria">
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab-active]="activeTab() === 'todos'"
+          [attr.aria-selected]="activeTab() === 'todos'"
+          (click)="setTab('todos')"
+        >Tudo</button>
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab-active]="activeTab() === 'ambiente'"
+          [attr.aria-selected]="activeTab() === 'ambiente'"
+          (click)="setTab('ambiente')"
+        >Ambiente</button>
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.tab-active]="activeTab() === 'sistema'"
+          [attr.aria-selected]="activeTab() === 'sistema'"
+          (click)="setTab('sistema')"
+        >Sistema</button>
+      </div>
+
       <div class="max-min-cards">
         <h3 class="subsection-title">Valores máximos e mínimos</h3>
         <div class="cards-grid evolucao-cards">
-          <div class="card">
-            <span class="card-label">Temperatura</span>
-            <div class="card-values">
-              <span class="card-min">
-                Mín:
-                @if (maxMin()!.tempMin !== null) { {{ maxMin()!.tempMin | number:'1.1-1' }} °C } @else { - }
-              </span>
-              <span class="card-max">
-                Máx:
-                @if (maxMin()!.tempMax !== null) { {{ maxMin()!.tempMax | number:'1.1-1' }} °C } @else { - }
-              </span>
+          @if (activeTab() !== 'sistema') {
+            <div class="card">
+              <span class="card-label">Temperatura</span>
+              <div class="card-values">
+                <span class="card-max">
+                  Máx:
+                  @if (maxMin()!.tempMax !== null) { {{ maxMin()!.tempMax | number:'1.1-1' }} °C } @else { - }
+                </span>
+                <span class="card-min">
+                  Mín:
+                  @if (maxMin()!.tempMin !== null) { {{ maxMin()!.tempMin | number:'1.1-1' }} °C } @else { - }
+                </span>
+              </div>
             </div>
-          </div>
-          <div class="card">
-            <span class="card-label">Umidade</span>
-            <div class="card-values">
-              <span class="card-min">
-                Mín:
-                @if (maxMin()!.umidMin !== null) { {{ maxMin()!.umidMin | number:'1.1-1' }} % } @else { - }
-              </span>
-              <span class="card-max">
-                Máx:
-                @if (maxMin()!.umidMax !== null) { {{ maxMin()!.umidMax | number:'1.1-1' }} % } @else { - }
-              </span>
+            <div class="card">
+              <span class="card-label">Umidade</span>
+              <div class="card-values">
+                <span class="card-max">
+                  Máx:
+                  @if (maxMin()!.umidMax !== null) { {{ maxMin()!.umidMax | number:'1.1-1' }} % } @else { - }
+                </span>
+                <span class="card-min">
+                  Mín:
+                  @if (maxMin()!.umidMin !== null) { {{ maxMin()!.umidMin | number:'1.1-1' }} % } @else { - }
+                </span>
+              </div>
             </div>
-          </div>
-          <div class="card">
-            <span class="card-label">Pressão</span>
-            <div class="card-values">
-              <span class="card-min">
-                Mín:
-                @if (maxMin()!.pressMin !== null) { {{ maxMin()!.pressMin | number:'1.0-0' }} mbar } @else { - }
-              </span>
-              <span class="card-max">
-                Máx:
-                @if (maxMin()!.pressMax !== null) { {{ maxMin()!.pressMax | number:'1.0-0' }} mbar } @else { - }
-              </span>
+            <div class="card">
+              <span class="card-label">Pressão</span>
+              <div class="card-values">
+                <span class="card-max">
+                  Máx:
+                  @if (maxMin()!.pressMax !== null) { {{ maxMin()!.pressMax | number:'1.0-0' }} hPa } @else { - }
+                </span>
+                <span class="card-min">
+                  Mín:
+                  @if (maxMin()!.pressMin !== null) { {{ maxMin()!.pressMin | number:'1.0-0' }} hPa } @else { - }
+                </span>
+              </div>
             </div>
-          </div>
-          <div class="card">
-            <span class="card-label">Bateria</span>
-            <div class="card-values">
-              <span class="card-min">
-                Mín:
-                @if (maxMin()!.batMin !== null) { {{ maxMin()!.batMin | number:'1.2-2' }} V } @else { - }
-              </span>
-              <span class="card-max">
-                Máx:
-                @if (maxMin()!.batMax !== null) { {{ maxMin()!.batMax | number:'1.2-2' }} V } @else { - }
-              </span>
+          }
+          @if (activeTab() !== 'ambiente') {
+            <div class="card">
+              <span class="card-label">Bateria</span>
+              <div class="card-values">
+                <span class="card-max">
+                  Máx:
+                  @if (maxMin()!.batMax !== null) { {{ maxMin()!.batMax | number:'1.2-2' }} V } @else { - }
+                </span>
+                <span class="card-min">
+                  Mín:
+                  @if (maxMin()!.batMin !== null) { {{ maxMin()!.batMin | number:'1.2-2' }} V } @else { - }
+                </span>
+              </div>
             </div>
-          </div>
-          <div class="card">
-            <span class="card-label">Painel solar</span>
-            <div class="card-values">
-              <span class="card-min">
-                Mín:
-                @if (maxMin()!.painelMin !== null) { {{ maxMin()!.painelMin | number:'1.2-2' }} V } @else { - }
-              </span>
-              <span class="card-max">
-                Máx:
-                @if (maxMin()!.painelMax !== null) { {{ maxMin()!.painelMax | number:'1.2-2' }} V } @else { - }
-              </span>
+            <div class="card">
+              <span class="card-label">Painel solar</span>
+              <div class="card-values">
+                <span class="card-max">
+                  Máx:
+                  @if (maxMin()!.painelMax !== null) { {{ maxMin()!.painelMax | number:'1.2-2' }} V } @else { - }
+                </span>
+                <span class="card-min">
+                  Mín:
+                  @if (maxMin()!.painelMin !== null) { {{ maxMin()!.painelMin | number:'1.2-2' }} V } @else { - }
+                </span>
+              </div>
             </div>
-          </div>
+          }
         </div>
       </div>
 
       <div class="charts-section">
-        <div class="chart-container">
-          <h3 class="chart-title">Temperatura (°C)</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataTemp" [options]="chartOptionsMulti" type="line"
-              role="img" aria-label="Gráfico de evolução da temperatura ao longo do dia em graus Celsius, com linhas para os sensores BME280 e SHT31"></canvas>
+        @if (activeTab() !== 'sistema') {
+          <div class="chart-container">
+            <h3 class="chart-title">Temperatura (°C)</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataTemp" [options]="chartOptionsMulti" type="line"
+                role="img" aria-label="Gráfico de evolução da temperatura ao longo do dia em graus Celsius, com linhas para os sensores BME280 e SHT31"></canvas>
+            </div>
+            <p class="sr-only">Gráfico de linha com duas séries (BME280 e SHT31) mostrando a variação da temperatura ao longo do dia selecionado.</p>
           </div>
-          <p class="sr-only">Gráfico de linha com duas séries (BME280 e SHT31) mostrando a variação da temperatura ao longo do dia selecionado.</p>
-        </div>
-        <div class="chart-container">
-          <h3 class="chart-title">Umidade (%)</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataUmid" [options]="chartOptionsMulti" type="line"
-              role="img" aria-label="Gráfico de evolução da umidade relativa ao longo do dia em porcentagem, com linhas para os sensores BME280 e SHT31"></canvas>
+          <div class="chart-container">
+            <h3 class="chart-title">Umidade (%)</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataUmid" [options]="chartOptionsMulti" type="line"
+                role="img" aria-label="Gráfico de evolução da umidade relativa ao longo do dia em porcentagem, com linhas para os sensores BME280 e SHT31"></canvas>
+            </div>
+            <p class="sr-only">Gráfico de linha com duas séries (BME280 e SHT31) mostrando a variação da umidade relativa do ar ao longo do dia selecionado.</p>
           </div>
-          <p class="sr-only">Gráfico de linha com duas séries (BME280 e SHT31) mostrando a variação da umidade relativa do ar ao longo do dia selecionado.</p>
-        </div>
-        <div class="chart-container">
-          <h3 class="chart-title">Pressão (hPa)</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataPress" [options]="chartOptions" type="line"
-              role="img" aria-label="Gráfico de evolução da pressão atmosférica ao longo do dia em hectopascais"></canvas>
+          <div class="chart-container">
+            <h3 class="chart-title">Pressão (hPa)</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataPress" [options]="chartOptions" type="line"
+                role="img" aria-label="Gráfico de evolução da pressão atmosférica ao longo do dia em hectopascais"></canvas>
+            </div>
+            <p class="sr-only">Gráfico de linha mostrando a variação da pressão atmosférica ao longo do dia selecionado.</p>
           </div>
-          <p class="sr-only">Gráfico de linha mostrando a variação da pressão atmosférica ao longo do dia selecionado.</p>
-        </div>
-        <div class="chart-container">
-          <h3 class="chart-title">Tensão da bateria (V)</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataBat" [options]="chartOptions" type="line"
-              role="img" aria-label="Gráfico de evolução da tensão da bateria ao longo do dia em volts"></canvas>
+        }
+        @if (activeTab() !== 'ambiente') {
+          <div class="chart-container">
+            <h3 class="chart-title">Tensão da bateria (V)</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataBat" [options]="chartOptions" type="line"
+                role="img" aria-label="Gráfico de evolução da tensão da bateria ao longo do dia em volts"></canvas>
+            </div>
+            <p class="sr-only">Gráfico de linha mostrando a variação da tensão da bateria ao longo do dia selecionado.</p>
           </div>
-          <p class="sr-only">Gráfico de linha mostrando a variação da tensão da bateria ao longo do dia selecionado.</p>
-        </div>
-        <div class="chart-container">
-          <h3 class="chart-title">Tensão do painel solar (V)</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataSolar" [options]="chartOptions" type="line"
-              role="img" aria-label="Gráfico de evolução da tensão do painel solar ao longo do dia em volts"></canvas>
+          <div class="chart-container">
+            <h3 class="chart-title">Tensão do painel solar (V)</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataSolar" [options]="chartOptions" type="line"
+                role="img" aria-label="Gráfico de evolução da tensão do painel solar ao longo do dia em volts"></canvas>
+            </div>
+            <p class="sr-only">Gráfico de linha mostrando a variação da tensão fornecida pelo painel solar ao longo do dia selecionado.</p>
           </div>
-          <p class="sr-only">Gráfico de linha mostrando a variação da tensão fornecida pelo painel solar ao longo do dia selecionado.</p>
-        </div>
+        }
       </div>
     }
   </section>
