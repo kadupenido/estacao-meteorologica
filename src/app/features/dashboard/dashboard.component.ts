@@ -92,7 +92,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private readonly baseChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    spanGaps: true,
     interaction: {
       intersect: false,
       mode: 'index',
@@ -260,6 +259,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       borderWidth: 2.5,
       pointRadius: 0,
       pointHoverRadius: 6,
+      spanGaps: true,
     } as const;
 
     const dsTempBme: ChartDataset<'line'> = {
