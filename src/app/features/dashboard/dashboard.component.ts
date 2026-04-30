@@ -51,10 +51,6 @@ const COLOR_BAT = '#34d399';
 const COLOR_SOLAR = '#fbbf24';
 const COLOR_REF = 'rgba(248, 113, 113, 0.55)';
 
-// Limiares de status da bateria (V) — alinhados com baterias 12V em float/operação
-const BAT_WARN = 11.8;
-const BAT_CRIT = 11.5;
-
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -128,16 +124,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected batStatus = computed<Status>(() => {
     const v = this.medicao()?.tensao_bateria;
     if (!isNum(v)) return 'unknown';
-    if (v < BAT_CRIT) return 'critical';
-    if (v < BAT_WARN) return 'warning';
+    if (v < environment.batteryDangerVoltage) return 'critical';
+    if (v < environment.batteryWarnVoltage) return 'warning';
     return 'ok';
   });
 
   protected painelStatus = computed<Status>(() => {
     const v = this.medicao()?.tensao_painel;
     if (!isNum(v)) return 'unknown';
-    if (v >= 13) return 'ok';
-    if (v >= 5) return 'warning';
+    if (v >= environment.panelOkVoltage) return 'ok';
+    if (v >= environment.panelWarnVoltage) return 'warning';
     return 'unknown';
   });
 
@@ -501,6 +497,34 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
+  private buildPressureScaledOptions(
+    base: ChartConfiguration['options'],
+    range: { min: number; max: number } | null,
+  ): ChartConfiguration['options'] {
+    if (!range) return base;
+    const span = range.max - range.min;
+    const stepSize = span <= 6 ? 1 : span <= 12 ? 2 : span <= 30 ? 5 : 10;
+    const min = Math.floor(range.min / stepSize) * stepSize - stepSize;
+    const max = Math.ceil(range.max / stepSize) * stepSize + stepSize;
+    return {
+      ...base,
+      scales: {
+        ...base!.scales,
+        y: {
+          ...((base!.scales as Record<string, unknown>)['y'] as object),
+          min,
+          max,
+          ticks: {
+            color: CHART_TEXT,
+            font: { size: 11 },
+            stepSize,
+            precision: 0,
+          },
+        },
+      },
+    };
+  }
+
   private rangeOf(values: Array<number | null>): { min: number; max: number } | null {
     const nums = values.filter(isNum);
     if (nums.length === 0) return null;
@@ -615,9 +639,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       fill: true,
     };
     // Linha de referência: limite de aviso da bateria.
+    const batWarn = environment.batteryWarnVoltage;
     const dsBatRef: ChartDataset<'line'> = {
-      data: meds.map(() => BAT_WARN),
-      label: `Aviso (${BAT_WARN.toFixed(1)} V)`,
+      data: meds.map(() => batWarn),
+      label: `Aviso (${batWarn.toFixed(1)} V)`,
       borderColor: COLOR_REF,
       backgroundColor: 'transparent',
       borderDash: [6, 6],
@@ -647,13 +672,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Ajusta escala Y com padding suave para evitar "ilusão de oscilação"
     // em métricas com pouca variação (bateria, painel, pressão).
-    this.chartOptionsPress = this.buildScaledOptions(
+    this.chartOptionsPress = this.buildPressureScaledOptions(
       this.chartOptionsPress,
       this.rangeOf(pressData),
     );
     const batRange = this.rangeOf(batData);
     const batRangeWithRef = batRange
-      ? { min: Math.min(batRange.min, BAT_WARN), max: Math.max(batRange.max, BAT_WARN) }
+      ? { min: Math.min(batRange.min, batWarn), max: Math.max(batRange.max, batWarn) }
       : null;
     this.chartOptionsBat = this.buildScaledOptions(this.chartOptionsBat, batRangeWithRef);
     this.chartOptionsSolar = this.buildScaledOptions(

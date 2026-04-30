@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://tempo.kadupenido.com",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
