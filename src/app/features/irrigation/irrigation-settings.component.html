@@ -1,0 +1,148 @@
+<div class="irrigation-page">
+  <header class="header">
+    <div class="header-main">
+      <h1 class="title">Configurações de irrigação</h1>
+      <p class="location">Limiar de umidade, histerese e tempo de acionamento das bombas.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/irrigation" class="date-chip">Monitoramento</a>
+      <button type="button" class="date-chip" (click)="loadConfig()">Recarregar</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Carregando configuração…</p>
+    </div>
+  } @else {
+    <section class="settings-section">
+      <form [formGroup]="form" (ngSubmit)="save()" class="settings-form">
+        <section formGroupName="zone_1" class="card form-zone-card">
+          <div class="zone-card-header">
+            <h2 class="subsection-title" id="zone-1-heading">Zona 1</h2>
+            <div class="zone-enable">
+              <span class="field-label" id="zone-1-active-label">Estado da zona</span>
+              <div
+                class="zone-enable-options"
+                role="radiogroup"
+                aria-labelledby="zone-1-active-label"
+              >
+                <button
+                  type="button"
+                  class="date-chip"
+                  role="radio"
+                  [class.active]="form.controls.zone_1.controls.active.value"
+                  [attr.aria-checked]="form.controls.zone_1.controls.active.value"
+                  aria-label="Zona ativa"
+                  (click)="setZoneActive('zone_1', true)"
+                >
+                  Ativa
+                </button>
+                <button
+                  type="button"
+                  class="date-chip"
+                  role="radio"
+                  [class.active]="!form.controls.zone_1.controls.active.value"
+                  [attr.aria-checked]="!form.controls.zone_1.controls.active.value"
+                  aria-label="Zona inativa"
+                  (click)="setZoneActive('zone_1', false)"
+                >
+                  Inativa
+                </button>
+              </div>
+              @if (!form.controls.zone_1.controls.active.value) {
+                <p class="zone-enable-hint">
+                  A irrigação automática fica desligada nesta zona até você salvar.
+                </p>
+              }
+            </div>
+          </div>
+          <div class="field-grid">
+            <label class="field">
+              <span class="field-label">Limiar de umidade (%)</span>
+              <input type="number" formControlName="threshold_pct" min="0" max="100" step="0.1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Tempo de bomba (s)</span>
+              <input type="number" formControlName="pump_duration_s" min="0" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Histerese (%)</span>
+              <input type="number" formControlName="hysteresis_pct" min="0" step="0.1" />
+            </label>
+          </div>
+        </section>
+
+        <section formGroupName="zone_2" class="card form-zone-card">
+          <div class="zone-card-header">
+            <h2 class="subsection-title" id="zone-2-heading">Zona 2</h2>
+            <div class="zone-enable">
+              <span class="field-label" id="zone-2-active-label">Estado da zona</span>
+              <div
+                class="zone-enable-options"
+                role="radiogroup"
+                aria-labelledby="zone-2-active-label"
+              >
+                <button
+                  type="button"
+                  class="date-chip"
+                  role="radio"
+                  [class.active]="form.controls.zone_2.controls.active.value"
+                  [attr.aria-checked]="form.controls.zone_2.controls.active.value"
+                  aria-label="Zona ativa"
+                  (click)="setZoneActive('zone_2', true)"
+                >
+                  Ativa
+                </button>
+                <button
+                  type="button"
+                  class="date-chip"
+                  role="radio"
+                  [class.active]="!form.controls.zone_2.controls.active.value"
+                  [attr.aria-checked]="!form.controls.zone_2.controls.active.value"
+                  aria-label="Zona inativa"
+                  (click)="setZoneActive('zone_2', false)"
+                >
+                  Inativa
+                </button>
+              </div>
+              @if (!form.controls.zone_2.controls.active.value) {
+                <p class="zone-enable-hint">
+                  A irrigação automática fica desligada nesta zona até você salvar.
+                </p>
+              }
+            </div>
+          </div>
+          <div class="field-grid">
+            <label class="field">
+              <span class="field-label">Limiar de umidade (%)</span>
+              <input type="number" formControlName="threshold_pct" min="0" max="100" step="0.1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Tempo de bomba (s)</span>
+              <input type="number" formControlName="pump_duration_s" min="0" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Histerese (%)</span>
+              <input type="number" formControlName="hysteresis_pct" min="0" step="0.1" />
+            </label>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit" [disabled]="saving()">
+            {{ saving() ? 'Salvando…' : 'Salvar configurações' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (error(); as err) {
+    <p class="error-message feedback-banner" role="alert">{{ err }}</p>
+  }
+  @if (success(); as ok) {
+    <p class="success-message feedback-banner" role="status">{{ ok }}</p>
+  }
+</div>

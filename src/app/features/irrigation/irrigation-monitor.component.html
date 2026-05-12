@@ -1,0 +1,121 @@
+<div class="irrigation-page">
+  <header class="header">
+    <div class="header-main">
+      <h1 class="title">Irrigação</h1>
+      <p class="location">Monitoramento em tempo real das zonas de solo e últimas ativações das bombas.</p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/irrigation/settings" class="date-chip">Configurações</a>
+      <button type="button" class="date-chip" (click)="reload()">Atualizar agora</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Carregando dados de irrigação…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state" role="alert">
+      <p>Falha ao carregar dados.</p>
+      <button type="button" class="btn-retry" (click)="reload()">Tentar novamente</button>
+    </div>
+  } @else if (summary(); as s) {
+    <section class="zones-section" aria-live="polite">
+      <h2 class="section-title">Estado atual</h2>
+      <div class="secondary-grid">
+        <article class="card zone-card">
+          <div class="zone-card-top">
+            <div class="card-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+              </svg>
+            </div>
+            <div class="zone-card-heading">
+              <div class="zone-title-row">
+                <h3 class="zone-name">Zona 1</h3>
+                <span class="zone-status" [class.zone-status-active]="s.zone_1.active" [class.zone-status-inactive]="!s.zone_1.active">
+                  {{ s.zone_1.active ? 'Ativa' : 'Inativa' }}
+                </span>
+              </div>
+              <div class="zone-value-row">
+                <span class="card-value">
+                  @if (s.zone_1.current_soil_humidity != null) {
+                    {{ s.zone_1.current_soil_humidity | number:'1.0-1' }}
+                  } @else {
+                    -
+                  }
+                </span>
+                <span class="zone-unit">%</span>
+              </div>
+              <span class="card-label">Umidade do solo</span>
+            </div>
+          </div>
+          <dl class="zone-meta">
+            <div class="zone-meta-row">
+              <dt>Leitura em</dt>
+              <dd>{{ formatDateTime(s.zone_1.current_soil_humidity_at) }}</dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Última irrigação</dt>
+              <dd>{{ formatDateTime(s.zone_1.last_irrigation_at) }}</dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Tempo ativo</dt>
+              <dd>{{ s.zone_1.last_irrigation_duration_s ?? '-' }} s</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="card zone-card">
+          <div class="zone-card-top">
+            <div class="card-icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+              </svg>
+            </div>
+            <div class="zone-card-heading">
+              <div class="zone-title-row">
+                <h3 class="zone-name">Zona 2</h3>
+                <span class="zone-status" [class.zone-status-active]="s.zone_2.active" [class.zone-status-inactive]="!s.zone_2.active">
+                  {{ s.zone_2.active ? 'Ativa' : 'Inativa' }}
+                </span>
+              </div>
+              <div class="zone-value-row">
+                <span class="card-value">
+                  @if (s.zone_2.current_soil_humidity != null) {
+                    {{ s.zone_2.current_soil_humidity | number:'1.0-1' }}
+                  } @else {
+                    -
+                  }
+                </span>
+                <span class="zone-unit">%</span>
+              </div>
+              <span class="card-label">Umidade do solo</span>
+            </div>
+          </div>
+          <dl class="zone-meta">
+            <div class="zone-meta-row">
+              <dt>Leitura em</dt>
+              <dd>{{ formatDateTime(s.zone_2.current_soil_humidity_at) }}</dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Última irrigação</dt>
+              <dd>{{ formatDateTime(s.zone_2.last_irrigation_at) }}</dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Tempo ativo</dt>
+              <dd>{{ s.zone_2.last_irrigation_duration_s ?? '-' }} s</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </section>
+  } @else {
+    <div class="empty-message">Nenhum dado de irrigação disponível.</div>
+  }
+</div>
