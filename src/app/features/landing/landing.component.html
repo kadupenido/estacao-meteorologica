@@ -1,31 +1,180 @@
 <section class="hero" aria-labelledby="landing-title">
-  <h1 id="landing-title">Monitor Ambiental</h1>
-  <p class="lead">
-    Dados em tempo real da estação: temperatura, umidade, pressão, bateria e painel solar — com
-    gráficos e histórico diário.
-  </p>
-  <div class="actions">
-    <a routerLink="/dashboard" class="btn btn-primary">Ver dashboard</a>
-    <a routerLink="/login" class="btn btn-secondary">Entrar</a>
+  <div class="hero-copy">
+    <h1 id="landing-title">{{ heroCopy.title }}</h1>
+    <p class="lead">{{ heroCopy.lead }}</p>
+    <div class="actions">
+      <a routerLink="/dashboard" class="btn btn-primary">Ver dashboard</a>
+      <a routerLink="/login" class="btn btn-secondary">Entrar</a>
+    </div>
+  </div>
+
+  <figure class="hero-media">
+    <picture>
+      <source [attr.srcset]="heroImage.webpSrc" type="image/webp" />
+      <img
+        [src]="heroImage.jpegSrc"
+        [attr.width]="heroImage.width"
+        [attr.height]="heroImage.height"
+        [alt]="heroImage.alt"
+        decoding="async"
+        fetchpriority="high"
+      />
+    </picture>
+  </figure>
+</section>
+
+<section class="trust" aria-label="Informações da estação">
+  <ul class="trust-list">
+    @for (item of trustItems; track item.label) {
+      <li>{{ item.label }}</li>
+    }
+  </ul>
+</section>
+
+<section class="project" aria-labelledby="project-title">
+  <div class="project-copy">
+    <h2 id="project-title">{{ projectCopy.title }}</h2>
+    <p class="section-lead">{{ projectCopy.lead }}</p>
+    <p class="section-body">{{ projectCopy.body }}</p>
+  </div>
+
+  <figure class="project-media">
+    <picture>
+      <source [attr.srcset]="projectImage.webpSrc" type="image/webp" />
+      <img
+        [src]="projectImage.jpegSrc"
+        [attr.width]="projectImage.width"
+        [attr.height]="projectImage.height"
+        [alt]="projectImage.alt"
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
+  </figure>
+</section>
+
+<section class="metrics" aria-labelledby="metrics-title">
+  <div class="section-heading">
+    <h2 id="metrics-title">O que monitoramos</h2>
+    <p class="section-lead">
+      Medições climáticas, energia da estação e solo em duas zonas, reunidas no mesmo painel.
+    </p>
+  </div>
+
+  <div class="metrics-grid">
+    @for (metric of metrics; track metric.title) {
+      <article class="card metric-card">
+        <h3>{{ metric.title }}</h3>
+        <p>{{ metric.detail }}</p>
+      </article>
+    }
   </div>
 </section>
 
-<section class="highlights" aria-label="Destaques">
-  <article class="card">
-    <h2>Tempo real</h2>
-    <p>Última medição e atualização periódica dos sensores BME280 e SHT31.</p>
-  </article>
-  <article class="card">
-    <h2>Evolução do dia</h2>
-    <p>Gráficos por variável e escolha da data para análise rápida.</p>
-  </article>
-  <article class="card">
-    <h2>Sessão opcional</h2>
-    <p>Área autenticada para funcionalidades futuras; o dashboard continua público.</p>
-    @if (auth.token()) {
-      <p class="card-foot">
-        <a routerLink="/conta" class="link">A minha conta</a>
-      </p>
+<section class="features" aria-labelledby="features-title">
+  <div class="section-heading">
+    <h2 id="features-title">Como acompanhar</h2>
+    <p class="section-lead">
+      Do agora ao histórico do dia, com energia visível e irrigação para quem entra com credenciais do servidor.
+    </p>
+  </div>
+
+  <div class="features-grid">
+    @for (feature of features; track feature.title) {
+      <article class="card feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          @switch (feature.icon) {
+            @case ('live') {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            }
+            @case ('charts') {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            }
+            @case ('energy') {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="18" height="10" rx="2" ry="2" />
+                <line x1="22" y1="11" x2="22" y2="13" />
+              </svg>
+            }
+            @case ('irrigation') {
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.69 17.66 8A8 8 0 1 1 4.34 8Z" />
+              </svg>
+            }
+          }
+        </div>
+        <h3>{{ feature.title }}</h3>
+        <p>{{ feature.description }}</p>
+      </article>
     }
-  </article>
+
+    <article class="card feature-card">
+      <div class="feature-icon" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      </div>
+      <h3>Conta e sessão</h3>
+      <p>
+        Login com credenciais configuradas no servidor, sem registro público. O dashboard continua aberto para visitantes.
+      </p>
+      @if (auth.token()) {
+        <p class="card-foot">
+          <a routerLink="/conta" class="link">Minha conta</a>
+        </p>
+      }
+    </article>
+  </div>
+</section>
+
+<section class="flow" aria-labelledby="flow-title">
+  <div class="section-heading">
+    <h2 id="flow-title">Como funciona</h2>
+    <p class="section-lead">Da leitura no campo à visualização no navegador, em três etapas.</p>
+  </div>
+
+  <ol class="flow-steps">
+    @for (step of flowSteps; track step.step) {
+      <li class="flow-step">
+        <span class="flow-step-number" aria-hidden="true">{{ step.step }}</span>
+        <div class="flow-step-copy">
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.description }}</p>
+        </div>
+      </li>
+    }
+  </ol>
+</section>
+
+<section class="cta" aria-labelledby="cta-title">
+  <div class="cta-card">
+    <h2 id="cta-title">{{ ctaCopy.title }}</h2>
+    <p class="section-lead">{{ ctaCopy.lead }}</p>
+    <div class="actions">
+      <a routerLink="/dashboard" class="btn btn-primary">Ver dashboard</a>
+      <a routerLink="/login" class="btn btn-secondary">Entrar para irrigação</a>
+    </div>
+  </div>
+</section>
+
+<section class="credits" aria-labelledby="credits-title">
+  <h2 id="credits-title" class="credits-title">Créditos das imagens</h2>
+  <ul class="credits-list">
+    @for (image of imageCredits; track image.webpSrc) {
+      <li>
+        Foto por
+        <a [href]="image.creditUrl" rel="noopener noreferrer" target="_blank">{{ image.credit }}</a>
+        ·
+        <a [href]="image.licenseUrl" rel="noopener noreferrer" target="_blank">{{ image.license }}</a>
+      </li>
+    }
+  </ul>
 </section>
