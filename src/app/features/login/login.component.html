@@ -1,0 +1,28 @@
+<div class="login-wrap">
+  <h1>Iniciar sessão</h1>
+  <p class="intro">Utilize as credenciais configuradas no servidor (sem registo público).</p>
+
+  @if (errorMsg()) {
+    <p class="alert" role="alert">{{ errorMsg() }}</p>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label class="field">
+      <span class="label">Utilizador</span>
+      <input type="text" formControlName="username" autocomplete="username" required />
+    </label>
+    <label class="field">
+      <span class="label">Palavra-passe</span>
+      <input type="password" formControlName="password" autocomplete="current-password" required />
+    </label>
+    <button type="submit" class="btn-submit" [disabled]="submitting()">
+      {{ submitting() ? 'A entrar…' : 'Entrar' }}
+    </button>
+  </form>
+
+  <nav class="subnav" aria-label="Outras páginas">
+    <a routerLink="/">Voltar à página inicial</a>
+    <span class="sep" aria-hidden="true">·</span>
+    <a routerLink="/dashboard">Ver dashboard</a>
+  </nav>
+</div>

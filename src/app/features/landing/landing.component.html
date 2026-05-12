@@ -1,0 +1,31 @@
+<section class="hero" aria-labelledby="landing-title">
+  <h1 id="landing-title">Monitor Ambiental</h1>
+  <p class="lead">
+    Dados em tempo real da estação: temperatura, umidade, pressão, bateria e painel solar — com
+    gráficos e histórico diário.
+  </p>
+  <div class="actions">
+    <a routerLink="/dashboard" class="btn btn-primary">Ver dashboard</a>
+    <a routerLink="/login" class="btn btn-secondary">Entrar</a>
+  </div>
+</section>
+
+<section class="highlights" aria-label="Destaques">
+  <article class="card">
+    <h2>Tempo real</h2>
+    <p>Última medição e atualização periódica dos sensores BME280 e SHT31.</p>
+  </article>
+  <article class="card">
+    <h2>Evolução do dia</h2>
+    <p>Gráficos por variável e escolha da data para análise rápida.</p>
+  </article>
+  <article class="card">
+    <h2>Sessão opcional</h2>
+    <p>Área autenticada para funcionalidades futuras; o dashboard continua público.</p>
+    @if (auth.token()) {
+      <p class="card-foot">
+        <a routerLink="/conta" class="link">A minha conta</a>
+      </p>
+    }
+  </article>
+</section>

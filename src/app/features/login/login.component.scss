@@ -1,0 +1,111 @@
+:host {
+  display: block;
+  max-width: 22rem;
+  margin: 0 auto;
+  padding:
+    clamp(1.5rem, 4vw, 2.5rem)
+    max(1rem, env(safe-area-inset-right))
+    2.5rem
+    max(1rem, env(safe-area-inset-left));
+}
+
+.login-wrap {
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.intro {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.alert {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  background: color-mix(in srgb, var(--status-crit) 18%, transparent);
+  color: var(--text-primary);
+  border: 1px solid color-mix(in srgb, var(--status-crit) 35%, transparent);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+input {
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--card-border);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.btn-submit {
+  margin-top: 0.25rem;
+  padding: 0.65rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: var(--accent);
+  color: var(--bg);
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    filter: brightness(1.05);
+  }
+}
+
+.subnav {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--card-border);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.subnav a {
+  color: var(--accent-light);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.sep {
+  margin: 0 0.35rem;
+  color: var(--text-muted);
+}

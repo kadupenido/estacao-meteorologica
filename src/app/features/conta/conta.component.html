@@ -1,0 +1,14 @@
+@if (user(); as u) {
+  <h1>Conta</h1>
+  <p class="meta">Sessão ativa como <strong>{{ u.username }}</strong> (id {{ u.id }}).</p>
+  <div class="actions">
+    <a routerLink="/dashboard" class="link-btn">Ir para o dashboard</a>
+    <button type="button" class="btn-logout" (click)="logout()">Terminar sessão</button>
+  </div>
+} @else if (loadError(); as err) {
+  <h1>Conta</h1>
+  <p class="alert" role="alert">{{ err }}</p>
+  <p><a routerLink="/login">Voltar ao login</a></p>
+} @else {
+  <p class="loading" aria-live="polite">A carregar…</p>
+}
