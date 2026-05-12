@@ -1,17 +1,8 @@
 <a class="skip-link" href="#main">Pular para o conteúdo</a>
+<app-header />
 <main id="main" tabindex="-1">
   <router-outlet />
 </main>
 <footer>
-  <nav class="footer-nav" aria-label="Mapa do site">
-    <a routerLink="/">Início</a>
-    <a routerLink="/dashboard">Dashboard</a>
-    <a routerLink="/login">Entrar</a>
-    @if (token()) {
-      <a routerLink="/conta">Conta</a>
-      <a routerLink="/irrigation">Irrigação</a>
-      <a routerLink="/irrigation/settings">Irrigação - Config</a>
-    }
-  </nav>
   <p>Monitor Ambiental — Monitoramento em tempo real</p>
 </footer>

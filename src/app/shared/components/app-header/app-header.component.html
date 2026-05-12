@@ -1,0 +1,64 @@
+<header class="app-header" [class.menu-open]="mobileMenuOpen()">
+  <div class="app-header-bar">
+    <a
+      routerLink="/"
+      class="brand"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      ariaCurrentWhenActive="page"
+    >
+      Monitor Ambiental
+    </a>
+
+    <button
+      type="button"
+      class="menu-toggle"
+      (click)="toggleMobileMenu()"
+      [attr.aria-expanded]="mobileMenuOpen()"
+      aria-controls="primary-navigation"
+    >
+      <span class="sr-only">{{ mobileMenuOpen() ? 'Fechar menu' : 'Abrir menu' }}</span>
+      <span class="menu-toggle-bar" aria-hidden="true"></span>
+      <span class="menu-toggle-bar" aria-hidden="true"></span>
+      <span class="menu-toggle-bar" aria-hidden="true"></span>
+    </button>
+
+    <nav id="primary-navigation" class="primary-navigation" aria-label="Navegação principal">
+      <div class="nav-section nav-primary">
+        @for (item of visiblePrimaryNav(); track item.route) {
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.exact ?? true }"
+            ariaCurrentWhenActive="page"
+          >
+            {{ item.label }}
+          </a>
+        }
+      </div>
+
+      <div class="nav-section nav-session">
+        @if (!isLoggedIn()) {
+          <a
+            routerLink="/login"
+            class="session-cta"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
+          >
+            Entrar
+          </a>
+        } @else {
+          <a
+            routerLink="/conta"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
+          >
+            Conta
+          </a>
+        }
+      </div>
+    </nav>
+  </div>
+</header>

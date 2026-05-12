@@ -3,11 +3,13 @@
   flex-direction: column;
   min-height: 100vh;
   background: var(--bg);
+  --app-header-offset: calc(3.5rem + max(0.5rem, env(safe-area-inset-top)));
 }
 
 main {
   flex: 1;
   outline: none;
+  padding-top: var(--app-header-offset);
 }
 
 footer {
@@ -20,22 +22,4 @@ footer {
   color: var(--text-muted);
   font-size: 0.8rem;
   border-top: 1px solid var(--card-border);
-}
-
-.footer-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-  font-size: 0.85rem;
-}
-
-.footer-nav a {
-  color: var(--accent-light);
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }

@@ -87,25 +87,3 @@ input {
     filter: brightness(1.05);
   }
 }
-
-.subnav {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--card-border);
-  font-size: 0.85rem;
-  text-align: center;
-}
-
-.subnav a {
-  color: var(--accent-light);
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.sep {
-  margin: 0 0.35rem;
-  color: var(--text-muted);
-}
