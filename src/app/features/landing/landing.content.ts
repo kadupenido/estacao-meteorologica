@@ -80,15 +80,15 @@ export const LANDING_TRUST_ITEMS: LandingTrustItem[] = [
 export const LANDING_METRICS: LandingMetric[] = [
   {
     title: 'Temperatura e umidade',
-    detail: 'BME280 e SHT31 em paralelo, com médias e séries separadas no histórico.',
+    detail: 'Leitura exclusiva via SHT31, com série única no histórico.',
   },
   {
     title: 'Pressão atmosférica',
-    detail: 'Pressão em hPa ajustada à altitude local da estação.',
+    detail: 'Pressão em hPa via BME280, ajustada à altitude local da estação.',
   },
   {
-    title: 'Bateria e painel solar',
-    detail: 'Tensões da bateria Li-ion 1S e do painel de 6 V para acompanhar a energia.',
+    title: 'Energia do painel e do sistema',
+    detail: 'INA219 mede tensão, corrente e potência do painel e do barramento do sistema.',
   },
   {
     title: 'Umidade do solo',
@@ -112,7 +112,7 @@ export const LANDING_FEATURES: LandingFeature[] = [
   {
     title: 'Energia da estação',
     description:
-      'Chips de bateria e painel solar com alertas visuais quando a tensão sai da faixa esperada.',
+      'Chips e gráficos de painel/sistema com tensão, corrente e potência para diagnóstico energético.',
     icon: 'energy',
   },
   {
@@ -128,7 +128,7 @@ export const LANDING_FLOW_STEPS: LandingFlowStep[] = [
     step: 1,
     title: 'Coleta no campo',
     description:
-      'O ESP32-S3 lê sensores climáticos, tensões e solo, acumula leituras e envia lotes para a API.',
+      'O ESP32-S3 lê SHT31, BME280, INA219 e solo, acumula leituras e envia lotes para a API.',
   },
   {
     step: 2,
@@ -149,12 +149,12 @@ export const LANDING_PROJECT_COPY = {
   lead:
     'Monitor Ambiental reúne hardware no campo, API central e interface web para acompanhar clima, energia e solo sem depender de planilhas.',
   body:
-    'Sensores redundantes e fila offline no dispositivo ajudam a manter o histórico mesmo quando a rede oscila.',
+    'Fila offline no dispositivo ajuda a manter o histórico mesmo quando a rede oscila.',
 };
 
 export const LANDING_HERO_COPY = {
   title: 'Monitor Ambiental',
-  lead: `Estação em ${environment.location} com clima, energia (bateria e painel solar) e irrigação por umidade do solo — dashboard público e histórico do dia.`,
+  lead: `Estação em ${environment.location} com clima, energia (painel e sistema) e irrigação por umidade do solo — dashboard público e histórico do dia.`,
 };
 
 export const LANDING_CTA_COPY = {

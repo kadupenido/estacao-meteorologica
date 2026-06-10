@@ -8,12 +8,6 @@ function isNum(v: number | null | undefined): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
-function avg(...vals: Array<number | null | undefined>): number | null {
-  const nums = vals.filter(isNum);
-  if (nums.length === 0) return null;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-
 @Injectable({ providedIn: 'root' })
 export class JsonLdService {
   private readonly doc = inject(DOCUMENT);
@@ -26,7 +20,7 @@ export class JsonLdService {
       name: 'Monitor Ambiental',
       url: environment.siteUrl,
       description:
-        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica, tensão da bateria e do painel solar.',
+        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica e energia do painel/sistema.',
       applicationCategory: 'UtilityApplication',
       operatingSystem: 'Web',
       inLanguage: 'pt-BR',
@@ -39,26 +33,22 @@ export class JsonLdService {
   }
 
   setWeatherObservation(medicao: Medicao): void {
-    const tempAvg =
-      avg(medicao.temperatura_bme, medicao.temperatura_sht) ?? medicao.temperatura ?? null;
-    const umidAvg = avg(medicao.umidade_bme, medicao.umidade_sht) ?? medicao.umidade ?? null;
-
     const measuredProperty: object[] = [];
 
-    if (isNum(tempAvg)) {
+    if (isNum(medicao.temperatura)) {
       measuredProperty.push({
         '@type': 'PropertyValue',
         name: 'Temperatura',
-        value: tempAvg,
+        value: medicao.temperatura,
         unitText: '°C',
         unitCode: 'CEL',
       });
     }
-    if (isNum(umidAvg)) {
+    if (isNum(medicao.umidade)) {
       measuredProperty.push({
         '@type': 'PropertyValue',
         name: 'Umidade relativa',
-        value: umidAvg,
+        value: medicao.umidade,
         unitText: '%',
         unitCode: 'P1',
       });
@@ -72,11 +62,11 @@ export class JsonLdService {
         unitCode: 'A97',
       });
     }
-    if (isNum(medicao.tensao_bateria)) {
+    if (isNum(medicao.tensao_sistema)) {
       measuredProperty.push({
         '@type': 'PropertyValue',
-        name: 'Tensão da bateria',
-        value: medicao.tensao_bateria,
+        name: 'Tensão do sistema',
+        value: medicao.tensao_sistema,
         unitText: 'V',
         unitCode: 'VLT',
       });
@@ -90,6 +80,38 @@ export class JsonLdService {
         unitCode: 'VLT',
       });
     }
+    if (isNum(medicao.corrente_painel)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Corrente do painel solar',
+        value: medicao.corrente_painel,
+        unitText: 'mA',
+      });
+    }
+    if (isNum(medicao.potencia_painel)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Potência do painel solar',
+        value: medicao.potencia_painel,
+        unitText: 'mW',
+      });
+    }
+    if (isNum(medicao.corrente_sistema)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Corrente do sistema',
+        value: medicao.corrente_sistema,
+        unitText: 'mA',
+      });
+    }
+    if (isNum(medicao.potencia_sistema)) {
+      measuredProperty.push({
+        '@type': 'PropertyValue',
+        name: 'Potência do sistema',
+        value: medicao.potencia_sistema,
+        unitText: 'mW',
+      });
+    }
 
     this.setSchema({
       '@context': 'https://schema.org',
@@ -99,7 +121,7 @@ export class JsonLdService {
           name: 'Monitor Ambiental',
           url: environment.siteUrl,
           description:
-            'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica, tensão da bateria e do painel solar.',
+            'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica e energia do painel/sistema.',
           applicationCategory: 'UtilityApplication',
           operatingSystem: 'Web',
           inLanguage: 'pt-BR',

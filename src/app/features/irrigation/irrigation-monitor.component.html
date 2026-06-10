@@ -67,6 +67,41 @@
               <dd>{{ s.zone_1.last_irrigation_duration_s ?? '-' }} s</dd>
             </div>
           </dl>
+          <div class="manual-block">
+            <h4 class="subsection-title manual-title">Irrigação manual — Bomba 1</h4>
+            @if (s.zone_1.manual.pending; as pending) {
+              <div class="manual-pending">
+                <span class="zone-status zone-status-pending">Comando pendente — {{ pending.duration_s }} s</span>
+                <span class="manual-countdown">expira em {{ remainingTime(pending.expires_at) }}</span>
+                <button type="button" class="date-chip" (click)="cancelManual(1)" [disabled]="manualBusy1()">
+                  Cancelar
+                </button>
+              </div>
+            } @else {
+              <form class="manual-form" (submit)="$event.preventDefault(); activateManual(1)">
+                <label class="field manual-field">
+                  <span class="field-label">Tempo (s)</span>
+                  <input type="number" min="1" max="600" step="1" inputmode="numeric" [formControl]="manualCtrl1" />
+                </label>
+                <button type="submit" class="btn-submit" [disabled]="manualBusy1() || manualCtrl1.invalid">
+                  Ativar
+                </button>
+              </form>
+              @if (manualCtrl1.touched && manualCtrl1.invalid) {
+                <p class="manual-msg manual-msg-error">Informe um tempo entre 1 e 600 segundos.</p>
+              }
+            }
+            @if (s.zone_1.manual.last_executed; as executed) {
+              <p class="manual-last">
+                Última irrigação manual: {{ formatDateTime(executed.executed_at) }}
+                ({{ executed.executed_duration_s }} s)
+              </p>
+            }
+            @if (manualMsg1(); as msg) {
+              <p class="manual-msg" [class.manual-msg-error]="msg.kind === 'error'">{{ msg.text }}</p>
+            }
+            <p class="zone-enable-hint">A ativação manual ignora o estado Ativa/Inativa da zona.</p>
+          </div>
         </article>
 
         <article class="card zone-card">
@@ -112,6 +147,41 @@
               <dd>{{ s.zone_2.last_irrigation_duration_s ?? '-' }} s</dd>
             </div>
           </dl>
+          <div class="manual-block">
+            <h4 class="subsection-title manual-title">Irrigação manual — Bomba 2</h4>
+            @if (s.zone_2.manual.pending; as pending) {
+              <div class="manual-pending">
+                <span class="zone-status zone-status-pending">Comando pendente — {{ pending.duration_s }} s</span>
+                <span class="manual-countdown">expira em {{ remainingTime(pending.expires_at) }}</span>
+                <button type="button" class="date-chip" (click)="cancelManual(2)" [disabled]="manualBusy2()">
+                  Cancelar
+                </button>
+              </div>
+            } @else {
+              <form class="manual-form" (submit)="$event.preventDefault(); activateManual(2)">
+                <label class="field manual-field">
+                  <span class="field-label">Tempo (s)</span>
+                  <input type="number" min="1" max="600" step="1" inputmode="numeric" [formControl]="manualCtrl2" />
+                </label>
+                <button type="submit" class="btn-submit" [disabled]="manualBusy2() || manualCtrl2.invalid">
+                  Ativar
+                </button>
+              </form>
+              @if (manualCtrl2.touched && manualCtrl2.invalid) {
+                <p class="manual-msg manual-msg-error">Informe um tempo entre 1 e 600 segundos.</p>
+              }
+            }
+            @if (s.zone_2.manual.last_executed; as executed) {
+              <p class="manual-last">
+                Última irrigação manual: {{ formatDateTime(executed.executed_at) }}
+                ({{ executed.executed_duration_s }} s)
+              </p>
+            }
+            @if (manualMsg2(); as msg) {
+              <p class="manual-msg" [class.manual-msg-error]="msg.kind === 'error'">{{ msg.text }}</p>
+            }
+            <p class="zone-enable-hint">A ativação manual ignora o estado Ativa/Inativa da zona.</p>
+          </div>
         </article>
       </div>
     </section>

@@ -24,32 +24,19 @@ function isNum(v: number | null | undefined): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
-function avg(...vals: Array<number | null | undefined>): number | null {
-  const nums = vals.filter(isNum);
-  if (nums.length === 0) return null;
-  return nums.reduce((s, n) => s + n, 0) / nums.length;
-}
-
-function pickTemp(m: Medicao): number | null {
-  return avg(m.temperatura_bme, m.temperatura_sht) ?? m.temperatura ?? null;
-}
-
-function pickHum(m: Medicao): number | null {
-  return avg(m.umidade_bme, m.umidade_sht) ?? m.umidade ?? null;
-}
-
-export type ChartTab = 'temp' | 'umid' | 'press' | 'bat' | 'solar';
+export type ChartTab = 'temp' | 'umid' | 'press' | 'painel' | 'sistema';
 export type Status = 'ok' | 'warning' | 'critical' | 'unknown';
 
 // Cores diretas (Chart.js não resolve var(--*) a partir de strings)
 const CHART_TEXT = '#8a96a0';
 const CHART_GRID = 'rgba(128, 128, 128, 0.18)';
-const COLOR_BME = '#22d3ee';
-const COLOR_SHT = '#f59e0b';
+const COLOR_TEMP = '#22d3ee';
+const COLOR_UMID = '#34d399';
 const COLOR_PRESS = '#a78bfa';
-const COLOR_BAT = '#34d399';
 const COLOR_SOLAR = '#fbbf24';
-const COLOR_REF = 'rgba(248, 113, 113, 0.55)';
+const COLOR_SYSTEM = '#06b6d4';
+const COLOR_CURRENT = '#f97316';
+const COLOR_POWER = '#f43f5e';
 
 @Component({
   selector: 'app-dashboard',
@@ -82,8 +69,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { id: 'temp', label: 'Temperatura' },
     { id: 'umid', label: 'Umidade' },
     { id: 'press', label: 'Pressão' },
-    { id: 'bat', label: 'Bateria' },
-    { id: 'solar', label: 'Solar' },
+    { id: 'painel', label: 'Painel' },
+    { id: 'sistema', label: 'Sistema' },
   ];
 
   protected readonly location = environment.location;
@@ -95,10 +82,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const m = this.medicao();
     if (!m) return null;
     return {
-      tempAvg: pickTemp(m),
-      umidAvg: pickHum(m),
+      temperatura: m.temperatura,
+      umidade: m.umidade,
       pressao: m.pressao,
-      tensao_bateria: m.tensao_bateria,
+      tensao_sistema: m.tensao_sistema,
       tensao_painel: m.tensao_painel,
       created_at: m.created_at,
     };
@@ -121,11 +108,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `há ${dias} d`;
   });
 
-  protected batStatus = computed<Status>(() => {
-    const v = this.medicao()?.tensao_bateria;
+  protected sistemaStatus = computed<Status>(() => {
+    const v = this.medicao()?.tensao_sistema;
     if (!isNum(v)) return 'unknown';
-    if (v < environment.batteryDangerVoltage) return 'critical';
-    if (v < environment.batteryWarnVoltage) return 'warning';
+    if (v < environment.systemDangerVoltage) return 'critical';
+    if (v < environment.systemWarnVoltage) return 'warning';
     return 'ok';
   });
 
@@ -166,10 +153,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
       isNum(a) && isNum(b) ? a - b : null;
 
     return {
-      temp: delta(pickTemp(cur), pickTemp(prev)),
-      umid: delta(pickHum(cur), pickHum(prev)),
+      temp: delta(cur.temperatura, prev.temperatura),
+      umid: delta(cur.umidade, prev.umidade),
       pressao: delta(cur.pressao, prev.pressao),
-      bateria: delta(cur.tensao_bateria, prev.tensao_bateria),
+      sistema: delta(cur.tensao_sistema, prev.tensao_sistema),
       painel: delta(cur.tensao_painel, prev.tensao_painel),
     };
   });
@@ -178,10 +165,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const m = this.medicoes();
     if (m.length === 0) return null;
 
-    const allTemps = m.flatMap((x) => [x.temperatura_bme, x.temperatura_sht, x.temperatura]).filter(isNum);
-    const allUmids = m.flatMap((x) => [x.umidade_bme, x.umidade_sht, x.umidade]).filter(isNum);
+    const allTemps = m.map((x) => x.temperatura).filter(isNum);
+    const allUmids = m.map((x) => x.umidade).filter(isNum);
     const allPress = m.map((x) => x.pressao).filter(isNum);
-    const allBat = m.map((x) => x.tensao_bateria).filter(isNum);
+    const allSistema = m.map((x) => x.tensao_sistema).filter(isNum);
     const allPainel = m.map((x) => x.tensao_painel).filter(isNum);
 
     return {
@@ -191,8 +178,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       umidMax: allUmids.length ? Math.max(...allUmids) : null,
       pressMin: allPress.length ? Math.min(...allPress) : null,
       pressMax: allPress.length ? Math.max(...allPress) : null,
-      batMin: allBat.length ? Math.min(...allBat) : null,
-      batMax: allBat.length ? Math.max(...allBat) : null,
+      sistemaMin: allSistema.length ? Math.min(...allSistema) : null,
+      sistemaMax: allSistema.length ? Math.max(...allSistema) : null,
       painelMin: allPainel.length ? Math.min(...allPainel) : null,
       painelMax: allPainel.length ? Math.max(...allPainel) : null,
     };
@@ -229,18 +216,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   };
 
   protected chartOptions: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsMulti: ChartConfiguration['options'] = this.buildMultiOptions(6);
   protected chartOptionsPress: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsBat: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsSolar: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsTemp: ChartConfiguration['options'] = this.chartOptionsMulti;
-  protected chartOptionsUmid: ChartConfiguration['options'] = this.chartOptionsMulti;
+  protected chartOptionsPainel: ChartConfiguration['options'] = this.baseChartOptions;
+  protected chartOptionsSistema: ChartConfiguration['options'] = this.baseChartOptions;
+  protected chartOptionsTemp: ChartConfiguration['options'] = this.baseChartOptions;
+  protected chartOptionsUmid: ChartConfiguration['options'] = this.baseChartOptions;
 
   protected chartDataTemp: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataUmid: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPress: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataBat: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataSolar: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataPainel: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataSistema: ChartConfiguration['data'] = { labels: [], datasets: [] };
 
   constructor() {
     // Reagrupa charts quando o ponto de quebra muda (afeta maxTicksLimit/legenda).
@@ -257,9 +243,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.seo.update({
       title: 'Monitor Ambiental — Dados em Tempo Real',
       description:
-        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica, tensão da bateria e do painel solar, com evolução diária e gráficos.',
+        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica e energia do painel/sistema, com evolução diária e gráficos.',
       keywords:
-        'monitor ambiental, temperatura, umidade, pressão atmosférica, bateria, painel solar, sensores, dados ambientais',
+        'monitor ambiental, temperatura, umidade, pressão atmosférica, painel solar, energia, sensores, dados ambientais',
     });
 
     this.jsonLd.setWebApplication();
@@ -447,37 +433,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // ===== Charts =====
 
-  private buildMultiOptions(maxTicks: number): ChartConfiguration['options'] {
-    return {
-      ...this.baseChartOptions,
-      scales: {
-        ...this.baseChartOptions!.scales,
-        x: {
-          ...((this.baseChartOptions!.scales as Record<string, unknown>)['x'] as object),
-          ticks: { color: CHART_TEXT, maxTicksLimit: maxTicks, font: { size: 11 } },
-          grid: { display: false },
-        },
-      },
-      plugins: {
-        ...this.baseChartOptions!.plugins,
-        legend: {
-          display: true,
-          position: 'top',
-          align: 'end',
-          labels: {
-            color: CHART_TEXT,
-            boxWidth: 12,
-            boxHeight: 12,
-            padding: 12,
-            font: { size: 12 },
-            usePointStyle: true,
-            pointStyle: 'circle',
-          },
-        },
-      },
-    };
-  }
-
   private buildScaledOptions(
     base: ChartConfiguration['options'],
     range: { min: number; max: number } | null,
@@ -546,12 +501,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
     this.chartOptions = single;
     this.chartOptionsPress = single;
-    this.chartOptionsBat = single;
-    this.chartOptionsSolar = single;
-    const multi = this.buildMultiOptions(ticks);
-    this.chartOptionsMulti = multi;
-    this.chartOptionsTemp = multi;
-    this.chartOptionsUmid = multi;
+    this.chartOptionsPainel = single;
+    this.chartOptionsSistema = single;
+    this.chartOptionsTemp = single;
+    this.chartOptionsUmid = single;
   }
 
   private atualizarCharts(meds: Medicao[]): void {
@@ -565,55 +518,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
       spanGaps: true,
     } as const;
 
-    const tempBmeData = meds.map((m) =>
-      isNum(m.temperatura_bme) ? m.temperatura_bme : isNum(m.temperatura) ? m.temperatura : null,
-    ) as (number | null)[];
-    const tempShtData = meds.map((m) =>
-      isNum(m.temperatura_sht) ? m.temperatura_sht : null,
-    ) as (number | null)[];
-
-    const dsTempBme: ChartDataset<'line'> = {
+    const tempData = meds.map((m) => (isNum(m.temperatura) ? m.temperatura : null)) as (number | null)[];
+    const dsTemp: ChartDataset<'line'> = {
       ...baseLine,
-      data: tempBmeData,
-      label: 'BME280',
-      borderColor: COLOR_BME,
+      data: tempData,
+      label: 'Temperatura (SHT31)',
+      borderColor: COLOR_TEMP,
       backgroundColor: 'rgba(34, 211, 238, 0.18)',
-      pointHoverBackgroundColor: COLOR_BME,
-      fill: false,
-    };
-    const dsTempSht: ChartDataset<'line'> = {
-      ...baseLine,
-      data: tempShtData,
-      label: 'SHT31',
-      borderColor: COLOR_SHT,
-      backgroundColor: 'rgba(245, 158, 11, 0.18)',
-      pointHoverBackgroundColor: COLOR_SHT,
+      pointHoverBackgroundColor: COLOR_TEMP,
       fill: false,
     };
 
-    const umidBmeData = meds.map((m) =>
-      isNum(m.umidade_bme) ? m.umidade_bme : isNum(m.umidade) ? m.umidade : null,
-    ) as (number | null)[];
-    const umidShtData = meds.map((m) =>
-      isNum(m.umidade_sht) ? m.umidade_sht : null,
-    ) as (number | null)[];
-
-    const dsUmidBme: ChartDataset<'line'> = {
+    const umidData = meds.map((m) => (isNum(m.umidade) ? m.umidade : null)) as (number | null)[];
+    const dsUmid: ChartDataset<'line'> = {
       ...baseLine,
-      data: umidBmeData,
-      label: 'BME280',
-      borderColor: COLOR_BME,
-      backgroundColor: 'rgba(34, 211, 238, 0.18)',
-      pointHoverBackgroundColor: COLOR_BME,
-      fill: false,
-    };
-    const dsUmidSht: ChartDataset<'line'> = {
-      ...baseLine,
-      data: umidShtData,
-      label: 'SHT31',
-      borderColor: COLOR_SHT,
-      backgroundColor: 'rgba(245, 158, 11, 0.18)',
-      pointHoverBackgroundColor: COLOR_SHT,
+      data: umidData,
+      label: 'Umidade (SHT31)',
+      borderColor: COLOR_UMID,
+      backgroundColor: 'rgba(52, 211, 153, 0.18)',
+      pointHoverBackgroundColor: COLOR_UMID,
       fill: false,
     };
 
@@ -628,62 +551,97 @@ export class DashboardComponent implements OnInit, OnDestroy {
       fill: true,
     };
 
-    const batData = meds.map((m) => (isNum(m.tensao_bateria) ? m.tensao_bateria : null)) as (number | null)[];
-    const dsBat: ChartDataset<'line'> = {
+    const painelTensaoData = meds.map((m) => (isNum(m.tensao_painel) ? m.tensao_painel : null)) as (number | null)[];
+    const painelCorrenteData = meds.map((m) =>
+      isNum(m.corrente_painel) ? m.corrente_painel : null,
+    ) as (number | null)[];
+    const painelPotenciaData = meds.map((m) =>
+      isNum(m.potencia_painel) ? m.potencia_painel : null,
+    ) as (number | null)[];
+    const dsPainelTensao: ChartDataset<'line'> = {
       ...baseLine,
-      data: batData,
-      label: 'Bateria (V)',
-      borderColor: COLOR_BAT,
-      backgroundColor: 'rgba(52, 211, 153, 0.2)',
-      pointHoverBackgroundColor: COLOR_BAT,
-      fill: true,
-    };
-    // Linha de referência: limite de aviso da bateria.
-    const batWarn = environment.batteryWarnVoltage;
-    const dsBatRef: ChartDataset<'line'> = {
-      data: meds.map(() => batWarn),
-      label: `Aviso (${batWarn.toFixed(1)} V)`,
-      borderColor: COLOR_REF,
-      backgroundColor: 'transparent',
-      borderDash: [6, 6],
-      borderWidth: 1.5,
-      pointRadius: 0,
-      pointHoverRadius: 0,
-      tension: 0,
-      fill: false,
-    };
-
-    const solarData = meds.map((m) => (isNum(m.tensao_painel) ? m.tensao_painel : null)) as (number | null)[];
-    const dsSolar: ChartDataset<'line'> = {
-      ...baseLine,
-      data: solarData,
-      label: 'Painel solar (V)',
+      data: painelTensaoData,
+      label: 'Tensão (V)',
       borderColor: COLOR_SOLAR,
       backgroundColor: 'rgba(251, 191, 36, 0.2)',
       pointHoverBackgroundColor: COLOR_SOLAR,
-      fill: true,
+      fill: false,
+    };
+    const dsPainelCorrente: ChartDataset<'line'> = {
+      ...baseLine,
+      data: painelCorrenteData,
+      label: 'Corrente (mA)',
+      borderColor: COLOR_CURRENT,
+      backgroundColor: 'rgba(249, 115, 22, 0.2)',
+      pointHoverBackgroundColor: COLOR_CURRENT,
+      fill: false,
+    };
+    const dsPainelPotencia: ChartDataset<'line'> = {
+      ...baseLine,
+      data: painelPotenciaData,
+      label: 'Potência (mW)',
+      borderColor: COLOR_POWER,
+      backgroundColor: 'rgba(244, 63, 94, 0.2)',
+      pointHoverBackgroundColor: COLOR_POWER,
+      fill: false,
     };
 
-    this.chartDataTemp = { labels, datasets: [dsTempBme, dsTempSht] };
-    this.chartDataUmid = { labels, datasets: [dsUmidBme, dsUmidSht] };
+    const sistemaTensaoData = meds.map((m) =>
+      isNum(m.tensao_sistema) ? m.tensao_sistema : null,
+    ) as (number | null)[];
+    const sistemaCorrenteData = meds.map((m) =>
+      isNum(m.corrente_sistema) ? m.corrente_sistema : null,
+    ) as (number | null)[];
+    const sistemaPotenciaData = meds.map((m) =>
+      isNum(m.potencia_sistema) ? m.potencia_sistema : null,
+    ) as (number | null)[];
+    const dsSistemaTensao: ChartDataset<'line'> = {
+      ...baseLine,
+      data: sistemaTensaoData,
+      label: 'Tensão (V)',
+      borderColor: COLOR_SYSTEM,
+      backgroundColor: 'rgba(6, 182, 212, 0.2)',
+      pointHoverBackgroundColor: COLOR_SYSTEM,
+      fill: false,
+    };
+    const dsSistemaCorrente: ChartDataset<'line'> = {
+      ...baseLine,
+      data: sistemaCorrenteData,
+      label: 'Corrente (mA)',
+      borderColor: COLOR_CURRENT,
+      backgroundColor: 'rgba(249, 115, 22, 0.2)',
+      pointHoverBackgroundColor: COLOR_CURRENT,
+      fill: false,
+    };
+    const dsSistemaPotencia: ChartDataset<'line'> = {
+      ...baseLine,
+      data: sistemaPotenciaData,
+      label: 'Potência (mW)',
+      borderColor: COLOR_POWER,
+      backgroundColor: 'rgba(244, 63, 94, 0.2)',
+      pointHoverBackgroundColor: COLOR_POWER,
+      fill: false,
+    };
+
+    this.chartDataTemp = { labels, datasets: [dsTemp] };
+    this.chartDataUmid = { labels, datasets: [dsUmid] };
     this.chartDataPress = { labels, datasets: [dsPress] };
-    this.chartDataBat = { labels, datasets: [dsBat, dsBatRef] };
-    this.chartDataSolar = { labels, datasets: [dsSolar] };
+    this.chartDataPainel = { labels, datasets: [dsPainelTensao, dsPainelCorrente, dsPainelPotencia] };
+    this.chartDataSistema = { labels, datasets: [dsSistemaTensao, dsSistemaCorrente, dsSistemaPotencia] };
 
     // Ajusta escala Y com padding suave para evitar "ilusão de oscilação"
-    // em métricas com pouca variação (bateria, painel, pressão).
+    // em métricas com pouca variação (sistema, painel, pressão).
     this.chartOptionsPress = this.buildPressureScaledOptions(
       this.chartOptionsPress,
       this.rangeOf(pressData),
     );
-    const batRange = this.rangeOf(batData);
-    const batRangeWithRef = batRange
-      ? { min: Math.min(batRange.min, batWarn), max: Math.max(batRange.max, batWarn) }
-      : null;
-    this.chartOptionsBat = this.buildScaledOptions(this.chartOptionsBat, batRangeWithRef);
-    this.chartOptionsSolar = this.buildScaledOptions(
-      this.chartOptionsSolar,
-      this.rangeOf(solarData),
+    this.chartOptionsPainel = this.buildScaledOptions(
+      this.chartOptionsPainel,
+      this.rangeOf(painelTensaoData),
+    );
+    this.chartOptionsSistema = this.buildScaledOptions(
+      this.chartOptionsSistema,
+      this.rangeOf(sistemaTensaoData),
     );
   }
 

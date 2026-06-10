@@ -18,12 +18,42 @@ export interface IrrigationConfigResponse {
   zone_2: IrrigationZoneConfig;
 }
 
+export interface IrrigationManualPending {
+  id: number;
+  duration_s: number;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface IrrigationManualExecuted {
+  id: number;
+  executed_at: string;
+  executed_duration_s: number;
+}
+
+export interface IrrigationZoneManual {
+  pending: IrrigationManualPending | null;
+  last_executed: IrrigationManualExecuted | null;
+}
+
+export interface IrrigationManualCommand {
+  id: number;
+  zone: 1 | 2;
+  duration_s: number;
+  status: 'pending' | 'executed' | 'canceled' | 'expired';
+  created_at: string;
+  expires_at: string;
+  executed_at: string | null;
+  executed_duration_s: number | null;
+}
+
 export interface IrrigationZoneSummary {
   active: boolean;
   current_soil_humidity: number | null;
   current_soil_humidity_at: string | null;
   last_irrigation_at: string | null;
   last_irrigation_duration_s: number | null;
+  manual: IrrigationZoneManual;
 }
 
 export interface IrrigationSummaryResponse {
@@ -60,5 +90,13 @@ export class ApiService {
 
   getIrrigationSummary(): Observable<IrrigationSummaryResponse> {
     return this.http.get<IrrigationSummaryResponse>(`${this.baseUrl}/irrigation/resumo`);
+  }
+
+  postIrrigationManual(payload: { zone: 1 | 2; duration_s: number }): Observable<IrrigationManualCommand> {
+    return this.http.post<IrrigationManualCommand>(`${this.baseUrl}/irrigation/manual`, payload);
+  }
+
+  cancelIrrigationManual(id: number): Observable<IrrigationManualCommand> {
+    return this.http.delete<IrrigationManualCommand>(`${this.baseUrl}/irrigation/manual/${id}`);
   }
 }

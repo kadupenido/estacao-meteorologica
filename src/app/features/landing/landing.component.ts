@@ -44,9 +44,9 @@ export class LandingComponent implements OnInit {
     this.seo.update({
       title: 'Monitor Ambiental — Monitoramento em tempo real',
       description:
-        'Estação em Belo Horizonte com temperatura, umidade, pressão, bateria, painel solar e irrigação por umidade do solo. Dashboard público com gráficos diários e área autenticada para irrigação.',
+        'Estação em Belo Horizonte com temperatura, umidade, pressão, energia do painel/sistema e irrigação por umidade do solo. Dashboard público com gráficos diários e área autenticada para irrigação.',
       keywords:
-        'monitor ambiental, estação meteorológica, temperatura, umidade, pressão, painel solar, bateria, irrigação, umidade do solo',
+        'monitor ambiental, estação meteorológica, temperatura, umidade, pressão, painel solar, energia, irrigação, umidade do solo',
       ogImage: `${environment.siteUrl}/images/landing/og-hero.webp`,
       twitterCard: 'summary_large_image',
     });

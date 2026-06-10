@@ -1,1 +1,59 @@
 @use './irrigation-shell' as *;
+
+.manual-block {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--card-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.manual-title {
+  margin-bottom: 0;
+}
+
+.manual-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+
+  .manual-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.manual-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.zone-status-pending {
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+}
+
+.manual-countdown {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.manual-last {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.manual-msg {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.manual-msg-error {
+  color: #fca5a5;
+}
