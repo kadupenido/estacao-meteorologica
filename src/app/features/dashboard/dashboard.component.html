@@ -28,6 +28,9 @@
             <span class="device-chip-value">
               @if (c.tensao_sistema !== null) { {{ c.tensao_sistema | number:'1.2-2' }} V } @else { - }
             </span>
+            @if (c.corrente_sistema !== null) {
+              <span class="device-chip-sub">{{ c.corrente_sistema | number:'1.0-0' }} mA</span>
+            }
             <span class="device-chip-label">Sistema</span>
           </span>
         </div>
@@ -403,7 +406,7 @@
             </div>
           </div>
         </div>
-        <div class="charts-section">
+        <div class="charts-section charts-section-energy">
           <div class="chart-container">
             <h3 class="chart-title">Energia do painel (V / mA)</h3>
             <div class="chart-wrapper">

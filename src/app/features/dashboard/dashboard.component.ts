@@ -14,7 +14,7 @@ import { timer, Subject, takeUntil, forkJoin, of, catchError, Subscription } fro
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
 
-import { ApiService } from '../../core/services/api.service';
+import { ApiService, type IrrigationSummaryResponse } from '../../core/services/api.service';
 import { SeoService } from '../../core/services/seo.service';
 import { JsonLdService } from '../../core/services/json-ld.service';
 import { environment } from '../../../environments/environment';
@@ -36,6 +36,7 @@ const COLOR_PRESS = '#a78bfa';
 const COLOR_SOLAR = '#fbbf24';
 const COLOR_SYSTEM = '#06b6d4';
 const COLOR_CURRENT = '#f97316';
+const ACTIVE_PUMP_POLL_MS = 20_000;
 
 @Component({
   selector: 'app-dashboard',
@@ -76,6 +77,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private pollingSub: Subscription | null = null;
   private visibilityHandler: (() => void) | null = null;
+  private pollIntervalMs = environment.refreshIntervalMs;
 
   protected current = computed(() => {
     const m = this.medicao();
@@ -85,6 +87,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       umidade: m.umidade,
       pressao: m.pressao,
       tensao_sistema: m.tensao_sistema,
+      corrente_sistema: m.corrente_sistema,
       tensao_painel: m.tensao_painel,
       created_at: m.created_at,
     };
@@ -343,9 +346,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private startPolling(): void {
     this.stopPolling();
-    this.pollingSub = timer(environment.refreshIntervalMs, environment.refreshIntervalMs)
+    this.pollingSub = timer(this.pollIntervalMs, this.pollIntervalMs)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.fetchAllData());
+  }
+
+  private hasActivePump(summary: IrrigationSummaryResponse | null): boolean {
+    if (!summary) return false;
+    return !!(summary.zone_1.manual.running || summary.zone_2.manual.running);
+  }
+
+  private syncPollInterval(summary: IrrigationSummaryResponse | null): void {
+    const nextMs = this.hasActivePump(summary)
+      ? ACTIVE_PUMP_POLL_MS
+      : environment.refreshIntervalMs;
+    if (nextMs === this.pollIntervalMs) return;
+    this.pollIntervalMs = nextMs;
+    this.startPolling();
   }
 
   private stopPolling(): void {
@@ -391,10 +408,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
           return of(null as Medicao[] | null);
         }),
       ),
+      irrigation: this.api.getIrrigationSummary().pipe(catchError(() => of(null))),
     })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: ({ medicao, medicoes }) => {
+        next: ({ medicao, medicoes, irrigation }) => {
           if (medicao !== null) {
             this.medicao.set(medicao);
             this.jsonLd.setWeatherObservation(medicao);
@@ -405,6 +423,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
               this.atualizarCharts(medicoes);
             }
           }
+          this.syncPollInterval(irrigation);
           this.loadingDados.set(false);
           this.loadingEvolucao.set(false);
         },
@@ -631,7 +650,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private atualizarCharts(meds: Medicao[]): void {
-    const labels = meds.map((m) => this.formatarHora(m.created_at));
+    const useSeconds = this.detectDenseLabels(meds);
+    const labels = meds.map((m) => this.formatarHora(m.created_at, useSeconds));
 
     const baseLine = {
       tension: 0.4,
@@ -766,12 +786,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
   }
 
-  private formatarHora(iso: string): string {
+  private detectDenseLabels(meds: Medicao[]): boolean {
+    if (!this.isHoje() || meds.length < 2) return false;
+    const seen = new Set<string>();
+    for (const m of meds) {
+      const key = this.minuteKey(m.created_at);
+      if (seen.has(key)) return true;
+      seen.add(key);
+    }
+    return false;
+  }
+
+  private minuteKey(iso: string): string {
+    try {
+      return new Date(this.toUtcIso(iso)).toLocaleString('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+    } catch {
+      return iso;
+    }
+  }
+
+  private formatarHora(iso: string, withSeconds = false): string {
     try {
       return new Date(this.toUtcIso(iso)).toLocaleTimeString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         hour: '2-digit',
         minute: '2-digit',
+        ...(withSeconds ? { second: '2-digit' } : {}),
       });
     } catch {
       return '-';
