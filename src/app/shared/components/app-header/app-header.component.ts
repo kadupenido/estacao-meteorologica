@@ -40,6 +40,7 @@ export class AppHeaderComponent {
   protected readonly primaryNav: NavItem[] = [
     { label: 'Início', route: '/', visibleWhen: 'always', exact: true },
     { label: 'Dashboard', route: '/dashboard', visibleWhen: 'always' },
+    { label: 'Energia', route: '/energia', visibleWhen: 'always' },
     { label: 'Irrigação', route: '/irrigation', visibleWhen: 'auth', exact: false },
   ];
 
