@@ -26,6 +26,45 @@ function isNum(v: number | null | undefined): v is number {
 
 export type Status = 'ok' | 'warning' | 'critical' | 'unknown';
 export type SaldoTone = 'positive' | 'neutral' | 'negative' | 'unknown';
+export type ChartTab = 'voltage' | 'current' | 'power' | 'balance';
+
+function buildBaseChartOptions(yUnit: string): ChartConfiguration['options'] {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { intersect: false, mode: 'index' },
+    plugins: {
+      legend: {
+        display: true,
+        labels: { color: CHART_TEXT, font: { size: 12 }, boxWidth: 12, padding: 16 },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(15, 20, 25, 0.95)',
+        titleColor: '#f0f2f5',
+        bodyColor: '#a8b3b8',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 8,
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: CHART_TEXT, maxTicksLimit: 8, font: { size: 11 } },
+      },
+      y: {
+        grid: { color: CHART_GRID },
+        ticks: {
+          color: CHART_TEXT,
+          font: { size: 11 },
+          callback: (value) => `${value} ${yUnit}`,
+        },
+        border: { display: false },
+      },
+    },
+  };
+}
 
 const CHART_TEXT = '#8a96a0';
 const CHART_GRID = 'rgba(128, 128, 128, 0.18)';
@@ -56,7 +95,15 @@ export class EnergiaComponent implements OnInit, OnDestroy {
   protected errorEvolucao = signal(false);
 
   protected isMobile = signal(false);
+  protected chartAtivo = signal<ChartTab>('voltage');
   private nowTick = signal(Date.now());
+
+  protected readonly chartTabs: ReadonlyArray<{ id: ChartTab; label: string }> = [
+    { id: 'voltage', label: 'Tensão' },
+    { id: 'current', label: 'Corrente' },
+    { id: 'power', label: 'Potência' },
+    { id: 'balance', label: 'Saldo' },
+  ];
 
   protected readonly location = environment.location;
 
@@ -124,51 +171,23 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     return 'neutral';
   });
 
-  private readonly baseChartOptions: ChartConfiguration['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { intersect: false, mode: 'index' },
-    plugins: {
-      legend: {
-        display: true,
-        labels: { color: CHART_TEXT, font: { size: 12 }, boxWidth: 12, padding: 16 },
-      },
-      tooltip: {
-        backgroundColor: 'rgba(15, 20, 25, 0.95)',
-        titleColor: '#f0f2f5',
-        bodyColor: '#a8b3b8',
-        borderColor: 'rgba(255, 255, 255, 0.12)',
-        borderWidth: 1,
-        padding: 12,
-        cornerRadius: 8,
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: CHART_TEXT, maxTicksLimit: 8, font: { size: 11 } },
-      },
-      y: {
-        grid: { color: CHART_GRID },
-        ticks: {
-          color: CHART_TEXT,
-          font: { size: 11 },
-          callback: (value) => `${value} W`,
-        },
-        border: { display: false },
-      },
-    },
-  };
+  private readonly baseChartOptionsVoltage = buildBaseChartOptions('V');
+  private readonly baseChartOptionsCurrent = buildBaseChartOptions('mA');
+  private readonly baseChartOptionsPower = buildBaseChartOptions('W');
 
-  protected chartOptionsPower: ChartConfiguration['options'] = this.baseChartOptions;
+  protected chartOptionsVoltage: ChartConfiguration['options'] = this.baseChartOptionsVoltage;
+  protected chartOptionsCurrent: ChartConfiguration['options'] = this.baseChartOptionsCurrent;
+  protected chartOptionsPower: ChartConfiguration['options'] = this.baseChartOptionsPower;
   protected chartOptionsBalance: ChartConfiguration['options'] = {
-    ...this.baseChartOptions,
+    ...this.baseChartOptionsPower,
     plugins: {
-      ...this.baseChartOptions!.plugins,
+      ...this.baseChartOptionsPower!.plugins,
       legend: { display: false },
     },
   };
 
+  protected chartDataVoltage: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataCurrent: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPower: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataBalance: ChartConfiguration['data'] = { labels: [], datasets: [] };
 
@@ -186,9 +205,9 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     this.seo.update({
       title: 'Energia — Monitor Ambiental',
       description:
-        'Painel solar, consumo do sistema e energia estimada do dia com gráficos de potência e saldo energético.',
+        'Painel solar, consumo do sistema e energia estimada do dia com gráficos de tensão, corrente, potência e saldo energético.',
       keywords:
-        'energia solar, painel solar, consumo, potência, Wh, monitor ambiental, estação meteorológica',
+        'energia solar, painel solar, consumo, tensão, corrente, potência, Wh, monitor ambiental, estação meteorológica',
       robots: 'index, follow',
     });
 
@@ -262,6 +281,10 @@ export class EnergiaComponent implements OnInit, OnDestroy {
 
   protected tentarNovamente(): void {
     this.carregar();
+  }
+
+  protected setChartAtivo(tab: ChartTab): void {
+    this.chartAtivo.set(tab);
   }
 
   protected mwToW(mw: number | null): number | null {
@@ -382,24 +405,32 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     });
   }
 
-  private refreshChartOptions(mobile: boolean): void {
+  private applyMobileTicks(
+    base: ChartConfiguration['options'],
+    mobile: boolean,
+  ): ChartConfiguration['options'] {
     const ticks = mobile ? 5 : 8;
-    const options: ChartConfiguration['options'] = {
-      ...this.baseChartOptions,
+    return {
+      ...base,
       scales: {
-        ...this.baseChartOptions!.scales,
+        ...base!.scales,
         x: {
-          ...((this.baseChartOptions!.scales as Record<string, unknown>)['x'] as object),
+          ...((base!.scales as Record<string, unknown>)['x'] as object),
           ticks: { color: CHART_TEXT, maxTicksLimit: ticks, font: { size: 11 } },
           grid: { display: false },
         },
       },
     };
-    this.chartOptionsPower = options;
+  }
+
+  private refreshChartOptions(mobile: boolean): void {
+    this.chartOptionsVoltage = this.applyMobileTicks(this.baseChartOptionsVoltage, mobile);
+    this.chartOptionsCurrent = this.applyMobileTicks(this.baseChartOptionsCurrent, mobile);
+    this.chartOptionsPower = this.applyMobileTicks(this.baseChartOptionsPower, mobile);
     this.chartOptionsBalance = {
-      ...options,
+      ...this.applyMobileTicks(this.baseChartOptionsPower, mobile),
       plugins: {
-        ...options!.plugins,
+        ...this.baseChartOptionsPower!.plugins,
         legend: { display: false },
       },
     };
@@ -443,6 +474,18 @@ export class EnergiaComponent implements OnInit, OnDestroy {
       spanGaps: true,
     } as const;
 
+    const painelVoltage = meds.map((m) =>
+      isNum(m.tensao_painel) ? m.tensao_painel : null,
+    ) as (number | null)[];
+    const sistemaVoltage = meds.map((m) =>
+      isNum(m.tensao_sistema) ? m.tensao_sistema : null,
+    ) as (number | null)[];
+    const painelCurrent = meds.map((m) =>
+      isNum(m.corrente_painel) ? m.corrente_painel : null,
+    ) as (number | null)[];
+    const sistemaCurrent = meds.map((m) =>
+      isNum(m.corrente_sistema) ? m.corrente_sistema : null,
+    ) as (number | null)[];
     const painelPower = meds.map((m) =>
       isNum(m.potencia_painel) ? m.potencia_painel / 1000 : null,
     ) as (number | null)[];
@@ -454,7 +497,47 @@ export class EnergiaComponent implements OnInit, OnDestroy {
       return (Math.max(0, m.potencia_painel) - m.potencia_sistema) / 1000;
     }) as (number | null)[];
 
-    const dsPainel: ChartDataset<'line'> = {
+    const dsPainelVoltage: ChartDataset<'line'> = {
+      ...baseLine,
+      data: painelVoltage,
+      label: 'Painel (V)',
+      borderColor: COLOR_SOLAR,
+      backgroundColor: 'rgba(251, 191, 36, 0.2)',
+      pointHoverBackgroundColor: COLOR_SOLAR,
+      fill: false,
+    };
+
+    const dsSistemaVoltage: ChartDataset<'line'> = {
+      ...baseLine,
+      data: sistemaVoltage,
+      label: 'Sistema (V)',
+      borderColor: COLOR_SYSTEM,
+      backgroundColor: 'rgba(6, 182, 212, 0.2)',
+      pointHoverBackgroundColor: COLOR_SYSTEM,
+      fill: false,
+    };
+
+    const dsPainelCurrent: ChartDataset<'line'> = {
+      ...baseLine,
+      data: painelCurrent,
+      label: 'Painel (mA)',
+      borderColor: COLOR_SOLAR,
+      backgroundColor: 'rgba(251, 191, 36, 0.2)',
+      pointHoverBackgroundColor: COLOR_SOLAR,
+      fill: false,
+    };
+
+    const dsSistemaCurrent: ChartDataset<'line'> = {
+      ...baseLine,
+      data: sistemaCurrent,
+      label: 'Sistema (mA)',
+      borderColor: COLOR_SYSTEM,
+      backgroundColor: 'rgba(6, 182, 212, 0.2)',
+      pointHoverBackgroundColor: COLOR_SYSTEM,
+      fill: false,
+    };
+
+    const dsPainelPower: ChartDataset<'line'> = {
       ...baseLine,
       data: painelPower,
       label: 'Painel (W)',
@@ -464,7 +547,7 @@ export class EnergiaComponent implements OnInit, OnDestroy {
       fill: false,
     };
 
-    const dsSistema: ChartDataset<'line'> = {
+    const dsSistemaPower: ChartDataset<'line'> = {
       ...baseLine,
       data: sistemaPower,
       label: 'Sistema (W)',
@@ -484,9 +567,20 @@ export class EnergiaComponent implements OnInit, OnDestroy {
       fill: true,
     };
 
-    this.chartDataPower = { labels, datasets: [dsPainel, dsSistema] };
+    this.chartDataVoltage = { labels, datasets: [dsPainelVoltage, dsSistemaVoltage] };
+    this.chartDataCurrent = { labels, datasets: [dsPainelCurrent, dsSistemaCurrent] };
+    this.chartDataPower = { labels, datasets: [dsPainelPower, dsSistemaPower] };
     this.chartDataBalance = { labels, datasets: [dsBalance] };
 
+    this.chartOptionsVoltage = this.buildScaledOptions(
+      this.chartOptionsVoltage,
+      this.rangeOf([...painelVoltage, ...sistemaVoltage]),
+    );
+    this.chartOptionsCurrent = this.buildScaledOptions(
+      this.chartOptionsCurrent,
+      this.rangeOf([...painelCurrent, ...sistemaCurrent]),
+      1,
+    );
     this.chartOptionsPower = this.buildScaledOptions(
       this.chartOptionsPower,
       this.rangeOf([...painelPower, ...sistemaPower]),

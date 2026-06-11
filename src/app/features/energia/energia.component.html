@@ -166,20 +166,92 @@
         </div>
       }
 
-      <div class="charts-section charts-section-energy">
-        <div class="chart-container">
-          <h3 class="chart-title">Potência painel vs sistema</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataPower" [options]="chartOptionsPower" type="line"></canvas>
+      @if (isMobile()) {
+        <div class="chart-tabs" role="tablist" aria-label="Selecionar gráfico">
+          @for (tab of chartTabs; track tab.id) {
+            <button
+              type="button"
+              role="tab"
+              class="chart-tab"
+              [class.active]="chartAtivo() === tab.id"
+              [attr.aria-selected]="chartAtivo() === tab.id"
+              (click)="setChartAtivo(tab.id)"
+            >{{ tab.label }}</button>
+          }
+        </div>
+
+        <div class="charts-section charts-section-energy charts-mobile">
+          @switch (chartAtivo()) {
+            @case ('voltage') {
+              <div class="chart-container">
+                <h3 class="chart-title">Tensão painel vs sistema</h3>
+                <div class="chart-wrapper">
+                  <canvas baseChart [data]="chartDataVoltage" [options]="chartOptionsVoltage" type="line"
+                    role="img" aria-label="Gráfico de tensão do painel solar e do sistema ao longo do dia em volts"></canvas>
+                </div>
+              </div>
+            }
+            @case ('current') {
+              <div class="chart-container">
+                <h3 class="chart-title">Corrente painel vs sistema</h3>
+                <div class="chart-wrapper">
+                  <canvas baseChart [data]="chartDataCurrent" [options]="chartOptionsCurrent" type="line"
+                    role="img" aria-label="Gráfico de corrente do painel solar e do sistema ao longo do dia em miliamperes"></canvas>
+                </div>
+              </div>
+            }
+            @case ('power') {
+              <div class="chart-container">
+                <h3 class="chart-title">Potência painel vs sistema</h3>
+                <div class="chart-wrapper">
+                  <canvas baseChart [data]="chartDataPower" [options]="chartOptionsPower" type="line"
+                    role="img" aria-label="Gráfico de potência do painel solar e do sistema ao longo do dia em watts"></canvas>
+                </div>
+              </div>
+            }
+            @case ('balance') {
+              <div class="chart-container">
+                <h3 class="chart-title">Saldo instantâneo (painel − sistema)</h3>
+                <div class="chart-wrapper">
+                  <canvas baseChart [data]="chartDataBalance" [options]="chartOptionsBalance" type="line"
+                    role="img" aria-label="Gráfico de saldo energético instantâneo entre painel e sistema ao longo do dia em watts"></canvas>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <div class="charts-section charts-section-energy">
+          <div class="chart-container">
+            <h3 class="chart-title">Tensão painel vs sistema</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataVoltage" [options]="chartOptionsVoltage" type="line"
+                role="img" aria-label="Gráfico de tensão do painel solar e do sistema ao longo do dia em volts"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3 class="chart-title">Corrente painel vs sistema</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataCurrent" [options]="chartOptionsCurrent" type="line"
+                role="img" aria-label="Gráfico de corrente do painel solar e do sistema ao longo do dia em miliamperes"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3 class="chart-title">Potência painel vs sistema</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataPower" [options]="chartOptionsPower" type="line"
+                role="img" aria-label="Gráfico de potência do painel solar e do sistema ao longo do dia em watts"></canvas>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3 class="chart-title">Saldo instantâneo (painel − sistema)</h3>
+            <div class="chart-wrapper">
+              <canvas baseChart [data]="chartDataBalance" [options]="chartOptionsBalance" type="line"
+                role="img" aria-label="Gráfico de saldo energético instantâneo entre painel e sistema ao longo do dia em watts"></canvas>
+            </div>
           </div>
         </div>
-        <div class="chart-container">
-          <h3 class="chart-title">Saldo instantâneo (painel − sistema)</h3>
-          <div class="chart-wrapper">
-            <canvas baseChart [data]="chartDataBalance" [options]="chartOptionsBalance" type="line"></canvas>
-          </div>
-        </div>
-      </div>
+      }
 
       <p class="energy-disclaimer">
         Valores são <strong>estimativas</strong> a partir de amostras médias (~10 min). Não separam carga da

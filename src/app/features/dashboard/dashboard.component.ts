@@ -585,7 +585,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const dsTemp: ChartDataset<'line'> = {
       ...baseLine,
       data: tempData,
-      label: 'Temperatura (SHT31)',
+      label: 'Temperatura',
       borderColor: COLOR_TEMP,
       backgroundColor: 'rgba(34, 211, 238, 0.18)',
       pointHoverBackgroundColor: COLOR_TEMP,
@@ -596,7 +596,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const dsUmid: ChartDataset<'line'> = {
       ...baseLine,
       data: umidData,
-      label: 'Umidade (SHT31)',
+      label: 'Umidade',
       borderColor: COLOR_UMID,
       backgroundColor: 'rgba(52, 211, 153, 0.18)',
       pointHoverBackgroundColor: COLOR_UMID,
