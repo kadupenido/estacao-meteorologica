@@ -198,4 +198,71 @@
   } @else {
     <div class="empty-message">Nenhum dado de irrigação disponível.</div>
   }
+
+  <section class="evolucao-section" aria-busy="{{ loadingEvolucao() ? 'true' : 'false' }}">
+    <h2 class="section-title">Evolução da umidade do solo</h2>
+
+    <div class="date-picker-section">
+      <div class="date-nav">
+        <button type="button" class="date-nav-btn" (click)="diaAnterior()" aria-label="Dia anterior">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div class="date-current" aria-live="polite">
+          <span class="date-current-value">{{ formatarDataCurta(dataSelecionada()) }}</span>
+          @if (isHoje()) {
+            <span class="date-current-tag">Hoje</span>
+          } @else if (isOntem()) {
+            <span class="date-current-tag">Ontem</span>
+          }
+        </div>
+        <button type="button" class="date-nav-btn" (click)="diaProximo()"
+                [disabled]="isHoje()" aria-label="Próximo dia">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="date-chips" role="group" aria-label="Atalhos de data">
+        <button type="button" class="date-chip" [class.active]="isHoje()" (click)="irParaHoje()">Hoje</button>
+        <button type="button" class="date-chip" [class.active]="isOntem()" (click)="irParaOntem()">Ontem</button>
+        <label class="date-chip date-chip-input" for="data-evolucao-irrigacao">
+          <span>Outra data</span>
+          <input
+            id="data-evolucao-irrigacao"
+            type="date"
+            class="date-input"
+            [ngModel]="dataSelecionada()"
+            (ngModelChange)="dataSelecionada.set($event); onDataChange()"
+          />
+        </label>
+      </div>
+    </div>
+
+    @if (loadingEvolucao()) {
+      <div class="loading-state" role="status">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p>Carregando medições…</p>
+      </div>
+    } @else if (errorEvolucao()) {
+      <div class="error-state" role="alert">
+        <p>Falha ao carregar os dados.</p>
+        <button type="button" class="btn-retry" (click)="tentarNovamenteEvolucao()">Tentar novamente</button>
+      </div>
+    } @else if (medicoes().length === 0) {
+      <div class="empty-message">Nenhuma medição encontrada para esta data.</div>
+    } @else {
+      <div class="chart-container">
+        <h3 class="chart-title">Umidade do solo (%)</h3>
+        <div class="chart-wrapper">
+          <canvas baseChart [data]="chartDataSolo" [options]="chartOptionsSolo" type="line"
+                  aria-label="Gráfico de evolução da umidade do solo por zona"></canvas>
+        </div>
+      </div>
+    }
+  </section>
 </div>
