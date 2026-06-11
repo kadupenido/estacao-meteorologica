@@ -384,28 +384,26 @@
           }
         </div>
       } @else {
+        <div class="charts-group">
+          <h3 class="subsection-title">Condições ambientais</h3>
+          <div class="charts-section">
+            <div class="chart-container">
+              <h3 class="chart-title">Temperatura e umidade</h3>
+              <div class="chart-wrapper">
+                <canvas baseChart [data]="chartDataClima" [options]="chartOptionsClima" type="line"
+                  role="img" aria-label="Gráfico de temperatura em graus Celsius e umidade relativa em porcentagem ao longo do dia"></canvas>
+              </div>
+            </div>
+            <div class="chart-container">
+              <h3 class="chart-title">Pressão (hPa)</h3>
+              <div class="chart-wrapper">
+                <canvas baseChart [data]="chartDataPress" [options]="chartOptionsPress" type="line"
+                  role="img" aria-label="Gráfico de evolução da pressão atmosférica ao longo do dia em hectopascais"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="charts-section">
-          <div class="chart-container">
-            <h3 class="chart-title">Temperatura (°C)</h3>
-            <div class="chart-wrapper">
-              <canvas baseChart [data]="chartDataTemp" [options]="chartOptionsTemp" type="line"
-                role="img" aria-label="Gráfico de evolução da temperatura ao longo do dia em graus Celsius"></canvas>
-            </div>
-          </div>
-          <div class="chart-container">
-            <h3 class="chart-title">Umidade (%)</h3>
-            <div class="chart-wrapper">
-              <canvas baseChart [data]="chartDataUmid" [options]="chartOptionsUmid" type="line"
-                role="img" aria-label="Gráfico de evolução da umidade relativa ao longo do dia em porcentagem"></canvas>
-            </div>
-          </div>
-          <div class="chart-container">
-            <h3 class="chart-title">Pressão (hPa)</h3>
-            <div class="chart-wrapper">
-              <canvas baseChart [data]="chartDataPress" [options]="chartOptionsPress" type="line"
-                role="img" aria-label="Gráfico de evolução da pressão atmosférica ao longo do dia em hectopascais"></canvas>
-            </div>
-          </div>
           <div class="chart-container">
             <h3 class="chart-title">Energia do painel (V / mA)</h3>
             <div class="chart-wrapper">

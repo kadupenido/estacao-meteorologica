@@ -220,9 +220,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected chartOptionsSistema: ChartConfiguration['options'] = this.baseChartOptions;
   protected chartOptionsTemp: ChartConfiguration['options'] = this.baseChartOptions;
   protected chartOptionsUmid: ChartConfiguration['options'] = this.baseChartOptions;
+  protected chartOptionsClima: ChartConfiguration['options'] = this.baseChartOptions;
 
   protected chartDataTemp: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataUmid: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataClima: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPress: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPainel: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataSistema: ChartConfiguration['data'] = { labels: [], datasets: [] };
@@ -451,6 +453,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
+  private buildClimaChartBase(mobile: boolean): ChartConfiguration['options'] {
+    const ticks = mobile ? 5 : 8;
+    return {
+      ...this.baseChartOptions,
+      plugins: {
+        ...this.baseChartOptions!.plugins,
+        legend: {
+          display: true,
+          labels: { color: CHART_TEXT, font: { size: 12 }, boxWidth: 12, padding: 16 },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: CHART_TEXT, maxTicksLimit: ticks, font: { size: 11 } },
+        },
+        y: {
+          position: 'left',
+          grid: { color: CHART_GRID },
+          ticks: {
+            color: CHART_TEXT,
+            font: { size: 11 },
+            callback: (value) => `${value} °C`,
+          },
+          border: { display: false },
+        },
+        y1: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: {
+            color: CHART_TEXT,
+            font: { size: 11 },
+            callback: (value) => `${value} %`,
+          },
+          border: { display: false },
+        },
+      },
+    };
+  }
+
   private buildEnergyChartBase(mobile: boolean): ChartConfiguration['options'] {
     const ticks = mobile ? 5 : 8;
     return {
@@ -578,12 +620,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       },
     };
     const energy = this.buildEnergyChartBase(mobile);
+    const clima = this.buildClimaChartBase(mobile);
     this.chartOptions = single;
     this.chartOptionsPress = single;
     this.chartOptionsPainel = energy;
     this.chartOptionsSistema = energy;
     this.chartOptionsTemp = single;
     this.chartOptionsUmid = single;
+    this.chartOptionsClima = clima;
   }
 
   private atualizarCharts(meds: Medicao[]): void {
@@ -684,6 +728,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.chartDataTemp = { labels, datasets: [dsTemp] };
     this.chartDataUmid = { labels, datasets: [dsUmid] };
+    this.chartDataClima = {
+      labels,
+      datasets: [
+        { ...dsTemp, yAxisID: 'y' },
+        { ...dsUmid, yAxisID: 'y1' },
+      ],
+    };
     this.chartDataPress = { labels, datasets: [dsPress] };
     this.chartDataPainel = { labels, datasets: [dsPainelTensao, dsPainelCorrente] };
     this.chartDataSistema = { labels, datasets: [dsSistemaTensao, dsSistemaCorrente] };
@@ -693,6 +744,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.chartOptionsPress = this.buildPressureScaledOptions(
       this.chartOptionsPress,
       this.rangeOf(pressData),
+    );
+    this.chartOptionsClima = this.buildDualScaledOptions(
+      this.chartOptionsClima,
+      this.rangeOf(tempData),
+      this.rangeOf(umidData),
     );
     this.chartOptionsPainel = this.buildDualScaledOptions(
       this.chartOptionsPainel,

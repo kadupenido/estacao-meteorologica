@@ -439,6 +439,12 @@
 .card-max { font-size: 1rem; font-weight: 600; color: var(--text-primary); }
 
 // Charts
+.charts-group {
+  margin-bottom: 1.5rem;
+
+  .subsection-title { margin-bottom: 1rem; }
+}
+
 .chart-tabs {
   display: flex;
   gap: 0.5rem;
