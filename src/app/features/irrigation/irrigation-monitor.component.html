@@ -69,7 +69,12 @@
           </dl>
           <div class="manual-block">
             <h4 class="subsection-title manual-title">Irrigação manual — Bomba 1</h4>
-            @if (s.zone_1.manual.pending; as pending) {
+            @if (s.zone_1.manual.running; as running) {
+              <div class="manual-running">
+                <span class="zone-status zone-status-running">Bomba ativa — {{ running.duration_s }} s</span>
+                <span class="manual-countdown">restantes {{ pumpRemainingTime(running.started_at, running.duration_s) }}</span>
+              </div>
+            } @else if (s.zone_1.manual.pending; as pending) {
               <div class="manual-pending">
                 <span class="zone-status zone-status-pending">Comando pendente — {{ pending.duration_s }} s</span>
                 <span class="manual-countdown">expira em {{ remainingTime(pending.expires_at) }}</span>
@@ -149,7 +154,12 @@
           </dl>
           <div class="manual-block">
             <h4 class="subsection-title manual-title">Irrigação manual — Bomba 2</h4>
-            @if (s.zone_2.manual.pending; as pending) {
+            @if (s.zone_2.manual.running; as running) {
+              <div class="manual-running">
+                <span class="zone-status zone-status-running">Bomba ativa — {{ running.duration_s }} s</span>
+                <span class="manual-countdown">restantes {{ pumpRemainingTime(running.started_at, running.duration_s) }}</span>
+              </div>
+            } @else if (s.zone_2.manual.pending; as pending) {
               <div class="manual-pending">
                 <span class="zone-status zone-status-pending">Comando pendente — {{ pending.duration_s }} s</span>
                 <span class="manual-countdown">expira em {{ remainingTime(pending.expires_at) }}</span>

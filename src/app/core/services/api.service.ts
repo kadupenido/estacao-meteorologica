@@ -25,6 +25,12 @@ export interface IrrigationManualPending {
   expires_at: string;
 }
 
+export interface IrrigationManualRunning {
+  id: number;
+  duration_s: number;
+  started_at: string;
+}
+
 export interface IrrigationManualExecuted {
   id: number;
   executed_at: string;
@@ -33,6 +39,7 @@ export interface IrrigationManualExecuted {
 
 export interface IrrigationZoneManual {
   pending: IrrigationManualPending | null;
+  running: IrrigationManualRunning | null;
   last_executed: IrrigationManualExecuted | null;
 }
 
@@ -40,9 +47,10 @@ export interface IrrigationManualCommand {
   id: number;
   zone: 1 | 2;
   duration_s: number;
-  status: 'pending' | 'executed' | 'canceled' | 'expired';
+  status: 'pending' | 'running' | 'executed' | 'canceled' | 'expired';
   created_at: string;
   expires_at: string;
+  started_at: string | null;
   executed_at: string | null;
   executed_duration_s: number | null;
 }

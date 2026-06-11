@@ -23,7 +23,8 @@
   }
 }
 
-.manual-pending {
+.manual-pending,
+.manual-running {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -34,6 +35,12 @@
   color: #fcd34d;
   background: rgba(251, 191, 36, 0.14);
   border: 1px solid rgba(251, 191, 36, 0.28);
+}
+
+.zone-status-running {
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.14);
+  border: 1px solid rgba(52, 211, 153, 0.28);
 }
 
 .manual-countdown {

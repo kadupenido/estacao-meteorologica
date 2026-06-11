@@ -10,6 +10,7 @@ import { environment } from '../../../environments/environment';
 
 const MANUAL_DURATION_MIN_S = 1;
 const MANUAL_DURATION_MAX_S = 600;
+const ACTIVE_MANUAL_POLL_MS = 20_000;
 
 interface ManualFeedback {
   kind: 'success' | 'error';
@@ -38,10 +39,11 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   protected readonly manualMsg1 = signal<ManualFeedback | null>(null);
   protected readonly manualMsg2 = signal<ManualFeedback | null>(null);
 
-  private readonly now = signal(Date.now());
+  protected readonly now = signal(Date.now());
 
   private pollingSub: Subscription | null = null;
   private tickerSub: Subscription | null = null;
+  private pollIntervalMs = environment.refreshIntervalMs;
 
   ngOnInit(): void {
     this.seo.update({
@@ -50,9 +52,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
       robots: 'noindex, nofollow',
     });
     this.reload();
-    this.pollingSub = timer(environment.refreshIntervalMs, environment.refreshIntervalMs).subscribe(() =>
-      this.reload(),
-    );
+    this.startPolling();
     this.tickerSub = timer(0, 1000).subscribe(() => this.now.set(Date.now()));
   }
 
@@ -70,6 +70,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
       next: (summary) => {
         this.summary.set(summary);
         this.loading.set(false);
+        this.syncPollInterval(summary);
       },
       error: () => {
         this.error.set(true);
@@ -95,7 +96,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
         busy.set(false);
         msg.set({
           kind: 'success',
-          text: 'Comando enviado. Será executado no próximo ciclo do dispositivo (até ~2 min).',
+          text: 'Comando enviado. O painel mostrará "Bomba ativa" assim que o dispositivo iniciar (~1 min).',
         });
         this.reload();
       },
@@ -141,10 +142,17 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
       return '--:--';
     }
     const remainingMs = Math.max(0, target - this.now());
-    const totalSeconds = Math.floor(remainingMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    return this.formatDurationMs(remainingMs);
+  }
+
+  protected pumpRemainingTime(startedAt: string, durationS: number): string {
+    const start = this.parseTimestamp(startedAt);
+    if (start === null) {
+      return '--:--';
+    }
+    const end = start + durationS * 1000;
+    const remainingMs = Math.max(0, end - this.now());
+    return this.formatDurationMs(remainingMs);
   }
 
   protected formatDateTime(value: string | null): string {
@@ -179,5 +187,40 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
     const withTz = value.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(value) ? value : `${value}Z`;
     const ms = new Date(withTz).getTime();
     return Number.isNaN(ms) ? null : ms;
+  }
+
+  private formatDurationMs(remainingMs: number): string {
+    const totalSeconds = Math.floor(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  private hasActiveManualCommand(summary: IrrigationSummaryResponse | null): boolean {
+    if (!summary) {
+      return false;
+    }
+    return !!(
+      summary.zone_1.manual.pending ||
+      summary.zone_1.manual.running ||
+      summary.zone_2.manual.pending ||
+      summary.zone_2.manual.running
+    );
+  }
+
+  private syncPollInterval(summary: IrrigationSummaryResponse): void {
+    const nextMs = this.hasActiveManualCommand(summary)
+      ? ACTIVE_MANUAL_POLL_MS
+      : environment.refreshIntervalMs;
+    if (nextMs === this.pollIntervalMs) {
+      return;
+    }
+    this.pollIntervalMs = nextMs;
+    this.startPolling();
+  }
+
+  private startPolling(): void {
+    this.pollingSub?.unsubscribe();
+    this.pollingSub = timer(this.pollIntervalMs, this.pollIntervalMs).subscribe(() => this.reload());
   }
 }
