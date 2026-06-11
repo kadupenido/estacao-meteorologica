@@ -61,6 +61,9 @@ describe('App header auth visibility', () => {
       'nav[aria-label="Navegação principal"]',
     ) as HTMLElement;
 
+    expect(nav.textContent).toContain('Clima');
+    expect(nav.textContent).toContain('Energia');
+    expect(nav.textContent).not.toContain('Dashboard');
     expect(nav.textContent).toContain('Entrar');
     expect(nav.textContent).not.toContain('Irrigação');
     expect(nav.textContent).not.toContain('Conta');

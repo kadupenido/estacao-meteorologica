@@ -12,7 +12,8 @@ import { authGuard } from './core/guards/auth.guard';
 export const routes: Routes = [
   { path: '', component: LandingComponent },
   { path: 'login', component: LoginComponent },
-  { path: 'dashboard', component: DashboardComponent },
+  { path: 'clima', component: DashboardComponent },
+  { path: 'dashboard', redirectTo: 'clima', pathMatch: 'full' },
   { path: 'energia', component: EnergiaComponent },
   { path: 'conta', canActivate: [authGuard], component: ContaComponent },
   { path: 'irrigation', canActivate: [authGuard], component: IrrigationMonitorComponent },

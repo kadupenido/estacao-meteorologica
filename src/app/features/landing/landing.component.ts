@@ -12,6 +12,7 @@ import {
   LANDING_HERO_IMAGE,
   LANDING_IMAGE_CREDITS,
   LANDING_METRICS,
+  LANDING_PORTALS,
   LANDING_PROJECT_COPY,
   LANDING_PROJECT_IMAGE,
   LANDING_TRUST_ITEMS,
@@ -34,6 +35,7 @@ export class LandingComponent implements OnInit {
   protected readonly projectCopy = LANDING_PROJECT_COPY;
   protected readonly projectImage = LANDING_PROJECT_IMAGE;
   protected readonly metrics = LANDING_METRICS;
+  protected readonly portals = LANDING_PORTALS;
   protected readonly features = LANDING_FEATURES;
   protected readonly flowSteps = LANDING_FLOW_STEPS;
   protected readonly ctaCopy = LANDING_CTA_COPY;
@@ -44,9 +46,9 @@ export class LandingComponent implements OnInit {
     this.seo.update({
       title: 'Monitor Ambiental — Monitoramento em tempo real',
       description:
-        'Estação em Belo Horizonte com temperatura, umidade, pressão, energia do painel/sistema e irrigação por umidade do solo. Dashboard público com gráficos diários e área autenticada para irrigação.',
+        'Estação em Belo Horizonte com páginas públicas de clima e energia, gráficos diários e área autenticada para irrigação por umidade do solo.',
       keywords:
-        'monitor ambiental, estação meteorológica, temperatura, umidade, pressão, painel solar, energia, irrigação, umidade do solo',
+        'monitor ambiental, clima, energia solar, estação meteorológica, temperatura, umidade, pressão, painel solar, irrigação, umidade do solo',
       ogImage: `${environment.siteUrl}/images/landing/og-hero.webp`,
       twitterCard: 'summary_large_image',
     });

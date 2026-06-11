@@ -38,7 +38,7 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     this.auth.syncFromStorage();
     if (this.auth.isLoggedIn()) {
-      void this.router.navigateByUrl('/dashboard');
+      void this.router.navigateByUrl('/clima');
       return;
     }
     this.seo.update({
@@ -61,7 +61,7 @@ export class LoginComponent implements OnInit {
         this.submitting.set(false);
         const returnUrl = safeReturnUrl(
           this.route.snapshot.queryParamMap.get('returnUrl'),
-          '/dashboard',
+          '/clima',
         );
         void this.router.navigateByUrl(returnUrl);
       },

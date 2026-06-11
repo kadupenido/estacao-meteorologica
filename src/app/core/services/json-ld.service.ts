@@ -20,7 +20,7 @@ export class JsonLdService {
       name: 'Monitor Ambiental',
       url: environment.siteUrl,
       description:
-        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica e energia do painel/sistema.',
+        'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica.',
       applicationCategory: 'UtilityApplication',
       operatingSystem: 'Web',
       inLanguage: 'pt-BR',
@@ -62,41 +62,6 @@ export class JsonLdService {
         unitCode: 'A97',
       });
     }
-    if (isNum(medicao.tensao_sistema)) {
-      measuredProperty.push({
-        '@type': 'PropertyValue',
-        name: 'Tensão do sistema',
-        value: medicao.tensao_sistema,
-        unitText: 'V',
-        unitCode: 'VLT',
-      });
-    }
-    if (isNum(medicao.tensao_painel)) {
-      measuredProperty.push({
-        '@type': 'PropertyValue',
-        name: 'Tensão do painel solar',
-        value: medicao.tensao_painel,
-        unitText: 'V',
-        unitCode: 'VLT',
-      });
-    }
-    if (isNum(medicao.corrente_painel)) {
-      measuredProperty.push({
-        '@type': 'PropertyValue',
-        name: 'Corrente do painel solar',
-        value: medicao.corrente_painel,
-        unitText: 'mA',
-      });
-    }
-    if (isNum(medicao.corrente_sistema)) {
-      measuredProperty.push({
-        '@type': 'PropertyValue',
-        name: 'Corrente do sistema',
-        value: medicao.corrente_sistema,
-        unitText: 'mA',
-      });
-    }
-
     this.setSchema({
       '@context': 'https://schema.org',
       '@graph': [
@@ -105,7 +70,7 @@ export class JsonLdService {
           name: 'Monitor Ambiental',
           url: environment.siteUrl,
           description:
-            'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica e energia do painel/sistema.',
+            'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica.',
           applicationCategory: 'UtilityApplication',
           operatingSystem: 'Web',
           inLanguage: 'pt-BR',

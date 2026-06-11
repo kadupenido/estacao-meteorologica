@@ -200,11 +200,36 @@ h3 {
   }
 }
 
+.portals-grid,
 .metrics-grid,
 .features-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.portal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+
+  h3 { margin: 0; }
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
+    transform: translateY(-2px);
+  }
+}
+
+.portal-cta {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent);
 }
 
 .card {

@@ -40,6 +40,13 @@ export interface LandingFlowStep {
   description: string;
 }
 
+export interface LandingPortal {
+  title: string;
+  description: string;
+  route: string;
+  ctaLabel: string;
+}
+
 const refreshMinutes = Math.round(environment.refreshIntervalMs / 60_000);
 
 export const LANDING_HERO_IMAGE: LandingImage = {
@@ -73,22 +80,47 @@ export const LANDING_IMAGE_CREDITS: LandingImage[] = [
 
 export const LANDING_TRUST_ITEMS: LandingTrustItem[] = [
   { label: environment.location },
-  { label: `Leituras no dashboard a cada ~${refreshMinutes} min` },
-  { label: 'Dashboard público, sem login' },
+  { label: `Leituras a cada ~${refreshMinutes} min` },
+  { label: 'Clima e energia públicos, sem login' },
+];
+
+export const LANDING_PORTALS: LandingPortal[] = [
+  {
+    title: 'Clima',
+    description:
+      'Temperatura, umidade e pressão em tempo real, com gráficos e mínimos/máximos do dia.',
+    route: '/clima',
+    ctaLabel: 'Abrir clima',
+  },
+  {
+    title: 'Energia',
+    description:
+      'Painel solar e consumo do sistema, com energia estimada (Wh), saldo e cobertura solar.',
+    route: '/energia',
+    ctaLabel: 'Abrir energia',
+  },
+  {
+    title: 'Irrigação',
+    description:
+      'Monitoramento das zonas de solo, comandos manuais e configuração de limiares após login.',
+    route: '/login',
+    ctaLabel: 'Entrar para irrigar',
+  },
 ];
 
 export const LANDING_METRICS: LandingMetric[] = [
   {
     title: 'Temperatura e umidade',
-    detail: 'Leitura exclusiva via SHT31, com série única no histórico.',
+    detail: 'Leitura exclusiva via SHT31, com série única no histórico de clima.',
   },
   {
     title: 'Pressão atmosférica',
     detail: 'Pressão em hPa via BME280, ajustada à altitude local da estação.',
   },
   {
-    title: 'Energia do painel e do sistema',
-    detail: 'INA219 mede tensão e corrente do painel e do barramento do sistema.',
+    title: 'Energia solar e sistema',
+    detail:
+      'INA219 alimenta a página Energia com potência, Wh estimados e comparação painel vs consumo.',
   },
   {
     title: 'Umidade do solo',
@@ -98,21 +130,21 @@ export const LANDING_METRICS: LandingMetric[] = [
 
 export const LANDING_FEATURES: LandingFeature[] = [
   {
-    title: 'Tempo real',
+    title: 'Clima em tempo real',
     description:
-      'Última medição com atualização periódica dos sensores climáticos e status de energia.',
+      'Última medição de temperatura, umidade e pressão com atualização periódica na página Clima.',
     icon: 'live',
   },
   {
-    title: 'Evolução do dia',
+    title: 'Histórico do dia',
     description:
-      'Gráficos por variável, mínimos e máximos e escolha da data para comparar o histórico.',
+      'Gráficos por variável climática, mínimos e máximos e escolha da data para comparar.',
     icon: 'charts',
   },
   {
-    title: 'Energia da estação',
+    title: 'Análise energética',
     description:
-      'Chips e gráficos de painel/sistema com tensão e corrente para diagnóstico energético.',
+      'Página Energia com Wh estimados, picos de potência, saldo painel − sistema e gráficos dedicados.',
     icon: 'energy',
   },
   {
@@ -140,7 +172,7 @@ export const LANDING_FLOW_STEPS: LandingFlowStep[] = [
     step: 3,
     title: 'Visualização na web',
     description:
-      'O dashboard público mostra o agora e o histórico; a área autenticada cuida da irrigação.',
+      'As páginas Clima e Energia são públicas; a irrigação fica na área autenticada.',
   },
 ];
 
@@ -154,10 +186,10 @@ export const LANDING_PROJECT_COPY = {
 
 export const LANDING_HERO_COPY = {
   title: 'Monitor Ambiental',
-  lead: `Estação em ${environment.location} com clima, energia (painel e sistema) e irrigação por umidade do solo — dashboard público e histórico do dia.`,
+  lead: `Estação em ${environment.location} com páginas dedicadas de clima e energia, irrigação por umidade do solo e histórico diário — tudo acessível pelo navegador.`,
 };
 
 export const LANDING_CTA_COPY = {
   title: 'Veja os dados agora',
-  lead: 'Abra o dashboard para a última leitura, gráficos do dia e status de energia da estação.',
+  lead: 'Abra o clima para condições atuais ou a energia para diagnóstico do painel solar e do consumo.',
 };

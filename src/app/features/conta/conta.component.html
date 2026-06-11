@@ -2,7 +2,7 @@
   <h1>Conta</h1>
   <p class="meta">Sessão ativa como <strong>{{ u.username }}</strong> (id {{ u.id }}).</p>
   <div class="actions">
-    <a routerLink="/dashboard" class="link-btn">Ir para o dashboard</a>
+    <a routerLink="/clima" class="link-btn">Ir para o clima</a>
     <button type="button" class="btn-logout" (click)="logout()">Terminar sessão</button>
   </div>
 } @else if (loadError(); as err) {

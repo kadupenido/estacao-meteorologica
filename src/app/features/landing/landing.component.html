@@ -3,7 +3,8 @@
     <h1 id="landing-title">{{ heroCopy.title }}</h1>
     <p class="lead">{{ heroCopy.lead }}</p>
     <div class="actions">
-      <a routerLink="/dashboard" class="btn btn-primary">Ver dashboard</a>
+      <a routerLink="/clima" class="btn btn-primary">Ver clima</a>
+      <a routerLink="/energia" class="btn btn-secondary">Ver energia</a>
       <a routerLink="/login" class="btn btn-secondary">Entrar</a>
     </div>
   </div>
@@ -53,11 +54,30 @@
   </figure>
 </section>
 
+<section class="portals" aria-labelledby="portals-title">
+  <div class="section-heading">
+    <h2 id="portals-title">Áreas do monitor</h2>
+    <p class="section-lead">
+      Clima e energia abertos a visitantes; irrigação disponível após login com credenciais do servidor.
+    </p>
+  </div>
+
+  <div class="portals-grid">
+    @for (portal of portals; track portal.route) {
+      <a [routerLink]="portal.route" class="card portal-card">
+        <h3>{{ portal.title }}</h3>
+        <p>{{ portal.description }}</p>
+        <span class="portal-cta">{{ portal.ctaLabel }} →</span>
+      </a>
+    }
+  </div>
+</section>
+
 <section class="metrics" aria-labelledby="metrics-title">
   <div class="section-heading">
     <h2 id="metrics-title">O que monitoramos</h2>
     <p class="section-lead">
-      Medições climáticas, energia da estação e solo em duas zonas, reunidas no mesmo painel.
+      Sensores no campo alimentam páginas separadas de clima, energia e irrigação por zona de solo.
     </p>
   </div>
 
@@ -75,7 +95,7 @@
   <div class="section-heading">
     <h2 id="features-title">Como acompanhar</h2>
     <p class="section-lead">
-      Do agora ao histórico do dia, com energia visível e irrigação para quem entra com credenciais do servidor.
+      Do agora ao histórico do dia — clima e energia públicos; irrigação para quem entra com credenciais.
     </p>
   </div>
 
@@ -124,7 +144,7 @@
       </div>
       <h3>Conta e sessão</h3>
       <p>
-        Login com credenciais configuradas no servidor, sem registro público. O dashboard continua aberto para visitantes.
+        Login com credenciais configuradas no servidor, sem registro público. Clima e energia permanecem abertos para visitantes.
       </p>
       @if (auth.token()) {
         <p class="card-foot">
@@ -159,7 +179,8 @@
     <h2 id="cta-title">{{ ctaCopy.title }}</h2>
     <p class="section-lead">{{ ctaCopy.lead }}</p>
     <div class="actions">
-      <a routerLink="/dashboard" class="btn btn-primary">Ver dashboard</a>
+      <a routerLink="/clima" class="btn btn-primary">Ver clima</a>
+      <a routerLink="/energia" class="btn btn-secondary">Ver energia</a>
       <a routerLink="/login" class="btn btn-secondary">Entrar para irrigação</a>
     </div>
   </div>

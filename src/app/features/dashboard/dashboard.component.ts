@@ -24,8 +24,7 @@ function isNum(v: number | null | undefined): v is number {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
-export type ChartTab = 'temp' | 'umid' | 'press' | 'painel' | 'sistema';
-export type Status = 'ok' | 'warning' | 'critical' | 'unknown';
+export type ChartTab = 'temp' | 'umid' | 'press';
 
 // Cores diretas (Chart.js não resolve var(--*) a partir de strings)
 const CHART_TEXT = '#8a96a0';
@@ -33,9 +32,6 @@ const CHART_GRID = 'rgba(128, 128, 128, 0.18)';
 const COLOR_TEMP = '#22d3ee';
 const COLOR_UMID = '#34d399';
 const COLOR_PRESS = '#a78bfa';
-const COLOR_SOLAR = '#fbbf24';
-const COLOR_SYSTEM = '#06b6d4';
-const COLOR_CURRENT = '#f97316';
 const ACTIVE_PUMP_POLL_MS = 20_000;
 
 @Component({
@@ -69,8 +65,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { id: 'temp', label: 'Temperatura' },
     { id: 'umid', label: 'Umidade' },
     { id: 'press', label: 'Pressão' },
-    { id: 'painel', label: 'Painel' },
-    { id: 'sistema', label: 'Sistema' },
   ];
 
   protected readonly location = environment.location;
@@ -86,9 +80,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       temperatura: m.temperatura,
       umidade: m.umidade,
       pressao: m.pressao,
-      tensao_sistema: m.tensao_sistema,
-      corrente_sistema: m.corrente_sistema,
-      tensao_painel: m.tensao_painel,
       created_at: m.created_at,
     };
   });
@@ -108,22 +99,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (hr < 24) return `há ${hr} h`;
     const dias = Math.floor(hr / 24);
     return `há ${dias} d`;
-  });
-
-  protected sistemaStatus = computed<Status>(() => {
-    const v = this.medicao()?.tensao_sistema;
-    if (!isNum(v)) return 'unknown';
-    if (v < environment.systemDangerVoltage) return 'critical';
-    if (v < environment.systemWarnVoltage) return 'warning';
-    return 'ok';
-  });
-
-  protected painelStatus = computed<Status>(() => {
-    const v = this.medicao()?.tensao_painel;
-    if (!isNum(v)) return 'unknown';
-    if (v >= environment.panelOkVoltage) return 'ok';
-    if (v >= environment.panelWarnVoltage) return 'warning';
-    return 'unknown';
   });
 
   protected isHoje = computed(() => this.dataSelecionada() === this.hoje());
@@ -158,8 +133,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       temp: delta(cur.temperatura, prev.temperatura),
       umid: delta(cur.umidade, prev.umidade),
       pressao: delta(cur.pressao, prev.pressao),
-      sistema: delta(cur.tensao_sistema, prev.tensao_sistema),
-      painel: delta(cur.tensao_painel, prev.tensao_painel),
     };
   });
 
@@ -170,8 +143,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const allTemps = m.map((x) => x.temperatura).filter(isNum);
     const allUmids = m.map((x) => x.umidade).filter(isNum);
     const allPress = m.map((x) => x.pressao).filter(isNum);
-    const allSistema = m.map((x) => x.tensao_sistema).filter(isNum);
-    const allPainel = m.map((x) => x.tensao_painel).filter(isNum);
 
     return {
       tempMin: allTemps.length ? Math.min(...allTemps) : null,
@@ -180,10 +151,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       umidMax: allUmids.length ? Math.max(...allUmids) : null,
       pressMin: allPress.length ? Math.min(...allPress) : null,
       pressMax: allPress.length ? Math.max(...allPress) : null,
-      sistemaMin: allSistema.length ? Math.min(...allSistema) : null,
-      sistemaMax: allSistema.length ? Math.max(...allSistema) : null,
-      painelMin: allPainel.length ? Math.min(...allPainel) : null,
-      painelMax: allPainel.length ? Math.max(...allPainel) : null,
     };
   });
 
@@ -219,8 +186,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   protected chartOptions: ChartConfiguration['options'] = this.baseChartOptions;
   protected chartOptionsPress: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsPainel: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsSistema: ChartConfiguration['options'] = this.baseChartOptions;
   protected chartOptionsTemp: ChartConfiguration['options'] = this.baseChartOptions;
   protected chartOptionsUmid: ChartConfiguration['options'] = this.baseChartOptions;
   protected chartOptionsClima: ChartConfiguration['options'] = this.baseChartOptions;
@@ -229,8 +194,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected chartDataUmid: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataClima: ChartConfiguration['data'] = { labels: [], datasets: [] };
   protected chartDataPress: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataPainel: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataSistema: ChartConfiguration['data'] = { labels: [], datasets: [] };
 
   constructor() {
     // Reagrupa charts quando o ponto de quebra muda (afeta maxTicksLimit/legenda).
@@ -245,11 +208,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.seo.update({
-      title: 'Monitor Ambiental — Dados em Tempo Real',
+      title: 'Clima — Monitor Ambiental',
       description:
-        'Monitoramento em tempo real de temperatura, umidade, pressão atmosférica e energia do painel/sistema, com evolução diária e gráficos.',
+        'Monitoramento em tempo real de temperatura, umidade e pressão atmosférica, com evolução diária e gráficos.',
       keywords:
-        'monitor ambiental, temperatura, umidade, pressão atmosférica, painel solar, energia, sensores, dados ambientais',
+        'clima, monitor ambiental, temperatura, umidade, pressão atmosférica, estação meteorológica, sensores',
     });
 
     this.jsonLd.setWebApplication();
@@ -512,52 +475,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  private buildEnergyChartBase(mobile: boolean): ChartConfiguration['options'] {
-    const ticks = mobile ? 5 : 8;
-    return {
-      ...this.baseChartOptions,
-      plugins: {
-        ...this.baseChartOptions!.plugins,
-        legend: {
-          display: true,
-          labels: { color: CHART_TEXT, font: { size: 12 }, boxWidth: 12, padding: 16 },
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: CHART_TEXT, maxTicksLimit: ticks, font: { size: 11 } },
-        },
-        y: {
-          position: 'left',
-          grid: { color: CHART_GRID },
-          ticks: {
-            color: CHART_TEXT,
-            font: { size: 11 },
-            callback: (value) => `${value} V`,
-          },
-          border: { display: false },
-        },
-        y1: {
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          ticks: {
-            color: CHART_TEXT,
-            font: { size: 11 },
-            callback: (value) => `${value} mA`,
-          },
-          border: { display: false },
-        },
-      },
-    };
-  }
-
   private buildDualScaledOptions(
     base: ChartConfiguration['options'],
-    tensaoRange: { min: number; max: number } | null,
-    correnteRange: { min: number; max: number } | null,
+    leftRange: { min: number; max: number } | null,
+    rightRange: { min: number; max: number } | null,
   ): ChartConfiguration['options'] {
-    if (!tensaoRange && !correnteRange) return base;
+    if (!leftRange && !rightRange) return base;
 
     const padFor = (range: { min: number; max: number }, minPad: number) =>
       Math.max((range.max - range.min) * 0.1, minPad);
@@ -566,18 +489,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const yScale = { ...(baseScales['y'] as object) };
     const y1Scale = { ...(baseScales['y1'] as object) };
 
-    if (tensaoRange) {
-      const pad = padFor(tensaoRange, 0.2);
+    if (leftRange) {
+      const pad = padFor(leftRange, 0.2);
       Object.assign(yScale, {
-        suggestedMin: tensaoRange.min - pad,
-        suggestedMax: tensaoRange.max + pad,
+        suggestedMin: leftRange.min - pad,
+        suggestedMax: leftRange.max + pad,
       });
     }
-    if (correnteRange) {
-      const pad = padFor(correnteRange, 1);
+    if (rightRange) {
+      const pad = padFor(rightRange, 1);
       Object.assign(y1Scale, {
-        suggestedMin: correnteRange.min - pad,
-        suggestedMax: correnteRange.max + pad,
+        suggestedMin: rightRange.min - pad,
+        suggestedMax: rightRange.max + pad,
       });
     }
 
@@ -638,12 +561,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
       },
     };
-    const energy = this.buildEnergyChartBase(mobile);
     const clima = this.buildClimaChartBase(mobile);
     this.chartOptions = single;
     this.chartOptionsPress = single;
-    this.chartOptionsPainel = energy;
-    this.chartOptionsSistema = energy;
     this.chartOptionsTemp = single;
     this.chartOptionsUmid = single;
     this.chartOptionsClima = clima;
@@ -694,58 +614,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       fill: true,
     };
 
-    const painelTensaoData = meds.map((m) => (isNum(m.tensao_painel) ? m.tensao_painel : null)) as (number | null)[];
-    const painelCorrenteData = meds.map((m) =>
-      isNum(m.corrente_painel) ? m.corrente_painel : null,
-    ) as (number | null)[];
-    const dsPainelTensao: ChartDataset<'line'> = {
-      ...baseLine,
-      data: painelTensaoData,
-      label: 'Tensão (V)',
-      yAxisID: 'y',
-      borderColor: COLOR_SOLAR,
-      backgroundColor: 'rgba(251, 191, 36, 0.2)',
-      pointHoverBackgroundColor: COLOR_SOLAR,
-      fill: false,
-    };
-    const dsPainelCorrente: ChartDataset<'line'> = {
-      ...baseLine,
-      data: painelCorrenteData,
-      label: 'Corrente (mA)',
-      yAxisID: 'y1',
-      borderColor: COLOR_CURRENT,
-      backgroundColor: 'rgba(249, 115, 22, 0.2)',
-      pointHoverBackgroundColor: COLOR_CURRENT,
-      fill: false,
-    };
-
-    const sistemaTensaoData = meds.map((m) =>
-      isNum(m.tensao_sistema) ? m.tensao_sistema : null,
-    ) as (number | null)[];
-    const sistemaCorrenteData = meds.map((m) =>
-      isNum(m.corrente_sistema) ? m.corrente_sistema : null,
-    ) as (number | null)[];
-    const dsSistemaTensao: ChartDataset<'line'> = {
-      ...baseLine,
-      data: sistemaTensaoData,
-      label: 'Tensão (V)',
-      yAxisID: 'y',
-      borderColor: COLOR_SYSTEM,
-      backgroundColor: 'rgba(6, 182, 212, 0.2)',
-      pointHoverBackgroundColor: COLOR_SYSTEM,
-      fill: false,
-    };
-    const dsSistemaCorrente: ChartDataset<'line'> = {
-      ...baseLine,
-      data: sistemaCorrenteData,
-      label: 'Corrente (mA)',
-      yAxisID: 'y1',
-      borderColor: COLOR_CURRENT,
-      backgroundColor: 'rgba(249, 115, 22, 0.2)',
-      pointHoverBackgroundColor: COLOR_CURRENT,
-      fill: false,
-    };
-
     this.chartDataTemp = { labels, datasets: [dsTemp] };
     this.chartDataUmid = { labels, datasets: [dsUmid] };
     this.chartDataClima = {
@@ -756,11 +624,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ],
     };
     this.chartDataPress = { labels, datasets: [dsPress] };
-    this.chartDataPainel = { labels, datasets: [dsPainelTensao, dsPainelCorrente] };
-    this.chartDataSistema = { labels, datasets: [dsSistemaTensao, dsSistemaCorrente] };
 
-    // Ajusta escala Y com padding suave para evitar "ilusão de oscilação"
-    // em métricas com pouca variação (sistema, painel, pressão).
     this.chartOptionsPress = this.buildPressureScaledOptions(
       this.chartOptionsPress,
       this.rangeOf(pressData),
@@ -769,16 +633,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.chartOptionsClima,
       this.rangeOf(tempData),
       this.rangeOf(umidData),
-    );
-    this.chartOptionsPainel = this.buildDualScaledOptions(
-      this.chartOptionsPainel,
-      this.rangeOf(painelTensaoData),
-      this.rangeOf(painelCorrenteData),
-    );
-    this.chartOptionsSistema = this.buildDualScaledOptions(
-      this.chartOptionsSistema,
-      this.rangeOf(sistemaTensaoData),
-      this.rangeOf(sistemaCorrenteData),
     );
   }
 
