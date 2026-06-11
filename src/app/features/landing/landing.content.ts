@@ -88,7 +88,7 @@ export const LANDING_METRICS: LandingMetric[] = [
   },
   {
     title: 'Energia do painel e do sistema',
-    detail: 'INA219 mede tensão, corrente e potência do painel e do barramento do sistema.',
+    detail: 'INA219 mede tensão e corrente do painel e do barramento do sistema.',
   },
   {
     title: 'Umidade do solo',
@@ -112,7 +112,7 @@ export const LANDING_FEATURES: LandingFeature[] = [
   {
     title: 'Energia da estação',
     description:
-      'Chips e gráficos de painel/sistema com tensão, corrente e potência para diagnóstico energético.',
+      'Chips e gráficos de painel/sistema com tensão e corrente para diagnóstico energético.',
     icon: 'energy',
   },
   {

@@ -36,7 +36,6 @@ const COLOR_PRESS = '#a78bfa';
 const COLOR_SOLAR = '#fbbf24';
 const COLOR_SYSTEM = '#06b6d4';
 const COLOR_CURRENT = '#f97316';
-const COLOR_POWER = '#f43f5e';
 
 @Component({
   selector: 'app-dashboard',
@@ -555,9 +554,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const painelCorrenteData = meds.map((m) =>
       isNum(m.corrente_painel) ? m.corrente_painel : null,
     ) as (number | null)[];
-    const painelPotenciaData = meds.map((m) =>
-      isNum(m.potencia_painel) ? m.potencia_painel : null,
-    ) as (number | null)[];
     const dsPainelTensao: ChartDataset<'line'> = {
       ...baseLine,
       data: painelTensaoData,
@@ -576,24 +572,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       pointHoverBackgroundColor: COLOR_CURRENT,
       fill: false,
     };
-    const dsPainelPotencia: ChartDataset<'line'> = {
-      ...baseLine,
-      data: painelPotenciaData,
-      label: 'Potência (mW)',
-      borderColor: COLOR_POWER,
-      backgroundColor: 'rgba(244, 63, 94, 0.2)',
-      pointHoverBackgroundColor: COLOR_POWER,
-      fill: false,
-    };
 
     const sistemaTensaoData = meds.map((m) =>
       isNum(m.tensao_sistema) ? m.tensao_sistema : null,
     ) as (number | null)[];
     const sistemaCorrenteData = meds.map((m) =>
       isNum(m.corrente_sistema) ? m.corrente_sistema : null,
-    ) as (number | null)[];
-    const sistemaPotenciaData = meds.map((m) =>
-      isNum(m.potencia_sistema) ? m.potencia_sistema : null,
     ) as (number | null)[];
     const dsSistemaTensao: ChartDataset<'line'> = {
       ...baseLine,
@@ -613,21 +597,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       pointHoverBackgroundColor: COLOR_CURRENT,
       fill: false,
     };
-    const dsSistemaPotencia: ChartDataset<'line'> = {
-      ...baseLine,
-      data: sistemaPotenciaData,
-      label: 'Potência (mW)',
-      borderColor: COLOR_POWER,
-      backgroundColor: 'rgba(244, 63, 94, 0.2)',
-      pointHoverBackgroundColor: COLOR_POWER,
-      fill: false,
-    };
 
     this.chartDataTemp = { labels, datasets: [dsTemp] };
     this.chartDataUmid = { labels, datasets: [dsUmid] };
     this.chartDataPress = { labels, datasets: [dsPress] };
-    this.chartDataPainel = { labels, datasets: [dsPainelTensao, dsPainelCorrente, dsPainelPotencia] };
-    this.chartDataSistema = { labels, datasets: [dsSistemaTensao, dsSistemaCorrente, dsSistemaPotencia] };
+    this.chartDataPainel = { labels, datasets: [dsPainelTensao, dsPainelCorrente] };
+    this.chartDataSistema = { labels, datasets: [dsSistemaTensao, dsSistemaCorrente] };
 
     // Ajusta escala Y com padding suave para evitar "ilusão de oscilação"
     // em métricas com pouca variação (sistema, painel, pressão).

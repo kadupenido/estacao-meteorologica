@@ -348,7 +348,7 @@
                 <h3 class="chart-title">Energia do painel (V/mA/mW)</h3>
                 <div class="chart-wrapper">
                   <canvas baseChart [data]="chartDataPainel" [options]="chartOptionsPainel" type="line"
-                    role="img" aria-label="Gráfico de tensão, corrente e potência do painel ao longo do dia"></canvas>
+                    role="img" aria-label="Gráfico de tensão e corrente do painel ao longo do dia"></canvas>
                 </div>
                 @if (maxMin(); as mm) {
                   <table class="chart-summary">
@@ -367,7 +367,7 @@
                 <h3 class="chart-title">Energia do sistema (V/mA/mW)</h3>
                 <div class="chart-wrapper">
                   <canvas baseChart [data]="chartDataSistema" [options]="chartOptionsSistema" type="line"
-                    role="img" aria-label="Gráfico de tensão, corrente e potência do sistema ao longo do dia"></canvas>
+                    role="img" aria-label="Gráfico de tensão e corrente do sistema ao longo do dia"></canvas>
                 </div>
                 @if (maxMin(); as mm) {
                   <table class="chart-summary">
@@ -410,14 +410,14 @@
             <h3 class="chart-title">Energia do painel (V/mA/mW)</h3>
             <div class="chart-wrapper">
               <canvas baseChart [data]="chartDataPainel" [options]="chartOptionsPainel" type="line"
-                role="img" aria-label="Gráfico de tensão, corrente e potência do painel ao longo do dia"></canvas>
+                role="img" aria-label="Gráfico de tensão e corrente do painel ao longo do dia"></canvas>
             </div>
           </div>
           <div class="chart-container">
             <h3 class="chart-title">Energia do sistema (V/mA/mW)</h3>
             <div class="chart-wrapper">
               <canvas baseChart [data]="chartDataSistema" [options]="chartOptionsSistema" type="line"
-                role="img" aria-label="Gráfico de tensão, corrente e potência do sistema ao longo do dia"></canvas>
+                role="img" aria-label="Gráfico de tensão e corrente do sistema ao longo do dia"></canvas>
             </div>
           </div>
         </div>

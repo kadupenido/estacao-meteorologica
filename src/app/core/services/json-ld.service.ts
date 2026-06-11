@@ -88,28 +88,12 @@ export class JsonLdService {
         unitText: 'mA',
       });
     }
-    if (isNum(medicao.potencia_painel)) {
-      measuredProperty.push({
-        '@type': 'PropertyValue',
-        name: 'Potência do painel solar',
-        value: medicao.potencia_painel,
-        unitText: 'mW',
-      });
-    }
     if (isNum(medicao.corrente_sistema)) {
       measuredProperty.push({
         '@type': 'PropertyValue',
         name: 'Corrente do sistema',
         value: medicao.corrente_sistema,
         unitText: 'mA',
-      });
-    }
-    if (isNum(medicao.potencia_sistema)) {
-      measuredProperty.push({
-        '@type': 'PropertyValue',
-        name: 'Potência do sistema',
-        value: medicao.potencia_sistema,
-        unitText: 'mW',
       });
     }
 
