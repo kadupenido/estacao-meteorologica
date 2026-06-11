@@ -1,19 +1,32 @@
 # Monitor Ambiental — frontend
 
-Interface web do projeto, em [Angular](https://angular.dev/) com **SSR** (renderização no servidor via Express). Geração e build com [Angular CLI](https://angular.dev/tools/cli) 21.x.
+Interface web do projeto em [Angular](https://angular.dev/) 21 com **SSR** (renderização no servidor via Express). Dashboard público, login JWT e painel de irrigação.
 
 ## Stack
 
 - Angular 21, TypeScript, SCSS
-- `@angular/ssr` + Express — app híbrida e servidor Node em produção
-- `chart.js` / `ng2-charts` — gráficos
-- Testes unitários: Vitest (`ng test`)
-- Container: Node 22 (Alpine), ver `Dockerfile`
+- `@angular/ssr` + Express — build híbrido (browser + servidor Node)
+- `chart.js` / `ng2-charts` — gráficos do dashboard
+- Vitest (`ng test`) — testes unitários
+- Container de produção: Node 22 Alpine (`Dockerfile`), orquestrado pelo compose em `api-node/deploy/`
+
+## Rotas
+
+| Caminho | Auth | Descrição |
+|---------|------|-----------|
+| `/` | — | Landing page |
+| `/login` | — | Autenticação |
+| `/dashboard` | — | Medições atuais e gráficos do dia |
+| `/conta` | JWT | Perfil e logout |
+| `/irrigation` | JWT | Monitor de irrigação e comandos manuais |
+| `/irrigation/settings` | JWT | Configuração das zonas (limiar, duração, histerese) |
+
+Lógica partilhada em `src/app/core/` (serviços, `authGuard`, interceptor HTTP). Constantes de exibição (intervalo de refresh, limiares de tensão, localização) em `src/environments/environment*.ts`.
 
 ## Pré-requisitos
 
-- Node.js compatível com o projeto (recomendado: **22.x**, alinhado ao Docker)
-- npm (o repositório fixa `packageManager` em `npm@11.6.2`)
+- Node.js **22.x** (alinhado ao Docker)
+- npm (`packageManager`: `npm@11.6.2`)
 
 ## Instalação
 
@@ -28,9 +41,9 @@ npm start
 # ou: ng serve
 ```
 
-Abra `http://localhost:4200/`. O servidor recarrega ao alterar os arquivos.
+Abre `http://localhost:4200/`. O `proxy.conf.json` encaminha `/api` para o backend configurado (por padrão a API de produção). Para API local, altere o `target` ou use o stack Docker em `api-node/deploy/`.
 
-No perfil **development**, as URLs da API estão em `src/environments/environment.development.ts` (por padrão apontam para o backend público). Ajuste conforme necessário para apontar para uma API local.
+As URLs da API usam caminho relativo `/api` (`environment.apiUrl`), igual em dev e produção.
 
 ## Build de produção
 
@@ -46,36 +59,20 @@ Saída em `dist/monitor-ambiental/` (browser + servidor Node).
 npm run serve:ssr
 ```
 
-Equivale a executar `node dist/monitor-ambiental/server/server.mjs`. A porta vem de `PORT` (padrão **4000**).
+Executa `node dist/monitor-ambiental/server/server.mjs`. Porta via `PORT` (padrão **4000**).
+
+## Proxy `/api` em produção
+
+No servidor SSR (`src/server.ts`), pedidos do browser a `/api/*` são reencaminhados para `API_UPSTREAM` com remoção do prefixo `/api`. A API em si nunca vê esse prefixo.
+
+| Variável | Descrição |
+|----------|-----------|
+| `PORT` | Porta HTTP do Node (padrão `4000`) |
+| `API_UPSTREAM` | Backend sem `/api` (ex.: `http://monitor-ambiental-api:8000`) |
 
 ## Docker
 
-Build multi-stage e execução do servidor SSR na porta **4000**:
-
-```bash
-docker compose build
-docker compose up
-```
-
-O `docker-compose.yml` espera a rede Docker **externa** `web` (mesma rede em que o serviço da API costuma estar, por exemplo `monitor-ambiental-api`). Crie-a se ainda não existir:
-
-```bash
-docker network create web
-```
-
-Variáveis usadas no compose:
-
-| Variável        | Descrição                                      |
-|-----------------|------------------------------------------------|
-| `PORT`          | Porta HTTP do Node (padrão `4000`)             |
-| `API_UPSTREAM`  | URL base da API sem `/api` (ex.: `http://monitor-ambiental-api:8000`) |
-
-No servidor Node, as requisições do browser para `/api/*` são encaminhadas para `API_UPSTREAM`, com reescrita de caminho (`/api` removido antes do proxy). Ver `src/server.ts`.
-
-## Variáveis de ambiente (SSR / produção)
-
-- **`PORT`** — porta de escuta (padrão `4000`).
-- **`API_UPSTREAM`** — backend HTTP alvo do proxy `/api` (padrão no código: `http://monitor-ambiental-api:8000`).
+O frontend é construído pelo `docker-compose.yml` em `api-node/deploy/` (serviço `web`), não por um compose próprio neste repositório. Rede interna `monitor-ambiental-internal`; apenas o nginx (`front`) fica exposto na rede externa `web`.
 
 ## Testes
 
@@ -84,14 +81,11 @@ npm test
 # ou: ng test
 ```
 
-## Schematics (Angular CLI)
+## Formatação
 
-```bash
-ng generate component nome-do-componente
-ng generate --help
-```
+Prettier em `package.json`: `printWidth` 100, aspas simples, parser Angular para HTML.
 
 ## Referências
 
-- [Angular CLI — visão geral e comandos](https://angular.dev/tools/cli)
+- [Angular CLI](https://angular.dev/tools/cli)
 - [Vitest](https://vitest.dev/)
