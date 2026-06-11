@@ -451,6 +451,85 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
+  private buildEnergyChartBase(mobile: boolean): ChartConfiguration['options'] {
+    const ticks = mobile ? 5 : 8;
+    return {
+      ...this.baseChartOptions,
+      plugins: {
+        ...this.baseChartOptions!.plugins,
+        legend: {
+          display: true,
+          labels: { color: CHART_TEXT, font: { size: 12 }, boxWidth: 12, padding: 16 },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: CHART_TEXT, maxTicksLimit: ticks, font: { size: 11 } },
+        },
+        y: {
+          position: 'left',
+          grid: { color: CHART_GRID },
+          ticks: {
+            color: CHART_TEXT,
+            font: { size: 11 },
+            callback: (value) => `${value} V`,
+          },
+          border: { display: false },
+        },
+        y1: {
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: {
+            color: CHART_TEXT,
+            font: { size: 11 },
+            callback: (value) => `${value} mA`,
+          },
+          border: { display: false },
+        },
+      },
+    };
+  }
+
+  private buildDualScaledOptions(
+    base: ChartConfiguration['options'],
+    tensaoRange: { min: number; max: number } | null,
+    correnteRange: { min: number; max: number } | null,
+  ): ChartConfiguration['options'] {
+    if (!tensaoRange && !correnteRange) return base;
+
+    const padFor = (range: { min: number; max: number }, minPad: number) =>
+      Math.max((range.max - range.min) * 0.1, minPad);
+
+    const baseScales = base!.scales as Record<string, unknown>;
+    const yScale = { ...(baseScales['y'] as object) };
+    const y1Scale = { ...(baseScales['y1'] as object) };
+
+    if (tensaoRange) {
+      const pad = padFor(tensaoRange, 0.2);
+      Object.assign(yScale, {
+        suggestedMin: tensaoRange.min - pad,
+        suggestedMax: tensaoRange.max + pad,
+      });
+    }
+    if (correnteRange) {
+      const pad = padFor(correnteRange, 1);
+      Object.assign(y1Scale, {
+        suggestedMin: correnteRange.min - pad,
+        suggestedMax: correnteRange.max + pad,
+      });
+    }
+
+    return {
+      ...base,
+      scales: {
+        ...base!.scales,
+        y: yScale,
+        y1: y1Scale,
+      },
+    };
+  }
+
   private buildPressureScaledOptions(
     base: ChartConfiguration['options'],
     range: { min: number; max: number } | null,
@@ -498,10 +577,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
       },
     };
+    const energy = this.buildEnergyChartBase(mobile);
     this.chartOptions = single;
     this.chartOptionsPress = single;
-    this.chartOptionsPainel = single;
-    this.chartOptionsSistema = single;
+    this.chartOptionsPainel = energy;
+    this.chartOptionsSistema = energy;
     this.chartOptionsTemp = single;
     this.chartOptionsUmid = single;
   }
@@ -558,6 +638,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...baseLine,
       data: painelTensaoData,
       label: 'Tensão (V)',
+      yAxisID: 'y',
       borderColor: COLOR_SOLAR,
       backgroundColor: 'rgba(251, 191, 36, 0.2)',
       pointHoverBackgroundColor: COLOR_SOLAR,
@@ -567,6 +648,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...baseLine,
       data: painelCorrenteData,
       label: 'Corrente (mA)',
+      yAxisID: 'y1',
       borderColor: COLOR_CURRENT,
       backgroundColor: 'rgba(249, 115, 22, 0.2)',
       pointHoverBackgroundColor: COLOR_CURRENT,
@@ -583,6 +665,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...baseLine,
       data: sistemaTensaoData,
       label: 'Tensão (V)',
+      yAxisID: 'y',
       borderColor: COLOR_SYSTEM,
       backgroundColor: 'rgba(6, 182, 212, 0.2)',
       pointHoverBackgroundColor: COLOR_SYSTEM,
@@ -592,6 +675,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ...baseLine,
       data: sistemaCorrenteData,
       label: 'Corrente (mA)',
+      yAxisID: 'y1',
       borderColor: COLOR_CURRENT,
       backgroundColor: 'rgba(249, 115, 22, 0.2)',
       pointHoverBackgroundColor: COLOR_CURRENT,
@@ -610,13 +694,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.chartOptionsPress,
       this.rangeOf(pressData),
     );
-    this.chartOptionsPainel = this.buildScaledOptions(
+    this.chartOptionsPainel = this.buildDualScaledOptions(
       this.chartOptionsPainel,
       this.rangeOf(painelTensaoData),
+      this.rangeOf(painelCorrenteData),
     );
-    this.chartOptionsSistema = this.buildScaledOptions(
+    this.chartOptionsSistema = this.buildDualScaledOptions(
       this.chartOptionsSistema,
       this.rangeOf(sistemaTensaoData),
+      this.rangeOf(sistemaCorrenteData),
     );
   }
 
