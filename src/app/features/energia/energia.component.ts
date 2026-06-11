@@ -17,6 +17,7 @@ import { ChartConfiguration, ChartDataset } from 'chart.js';
 import { ApiService } from '../../core/services/api.service';
 import { SeoService } from '../../core/services/seo.service';
 import { computeEnergyDaySummary } from '../../core/utils/energy-stats';
+import { chartTickLabel, formatDecimal } from '../../core/utils/format-locale';
 import { environment } from '../../../environments/environment';
 import type { Medicao } from '../../shared/models/medicao.model';
 
@@ -28,7 +29,7 @@ export type Status = 'ok' | 'warning' | 'critical' | 'unknown';
 export type SaldoTone = 'positive' | 'neutral' | 'negative' | 'unknown';
 export type ChartTab = 'voltage' | 'current' | 'power' | 'balance';
 
-function buildBaseChartOptions(yUnit: string): ChartConfiguration['options'] {
+function buildBaseChartOptions(yUnit: string, maxFrac: number): ChartConfiguration<'line'>['options'] {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -46,6 +47,14 @@ function buildBaseChartOptions(yUnit: string): ChartConfiguration['options'] {
         borderWidth: 1,
         padding: 12,
         cornerRadius: 8,
+        callbacks: {
+          label: (ctx) => {
+            const v = ctx.parsed.y;
+            return v === null
+              ? `${ctx.dataset.label}: -`
+              : `${ctx.dataset.label}: ${formatDecimal(v, 0, maxFrac)} ${yUnit}`;
+          },
+        },
       },
     },
     scales: {
@@ -58,7 +67,7 @@ function buildBaseChartOptions(yUnit: string): ChartConfiguration['options'] {
         ticks: {
           color: CHART_TEXT,
           font: { size: 11 },
-          callback: (value) => `${value} ${yUnit}`,
+          callback: (value) => chartTickLabel(value, yUnit, maxFrac),
         },
         border: { display: false },
       },
@@ -171,14 +180,14 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     return 'neutral';
   });
 
-  private readonly baseChartOptionsVoltage = buildBaseChartOptions('V');
-  private readonly baseChartOptionsCurrent = buildBaseChartOptions('mA');
-  private readonly baseChartOptionsPower = buildBaseChartOptions('W');
+  private readonly baseChartOptionsVoltage = buildBaseChartOptions('V', 2);
+  private readonly baseChartOptionsCurrent = buildBaseChartOptions('mA', 0);
+  private readonly baseChartOptionsPower = buildBaseChartOptions('W', 3);
 
-  protected chartOptionsVoltage: ChartConfiguration['options'] = this.baseChartOptionsVoltage;
-  protected chartOptionsCurrent: ChartConfiguration['options'] = this.baseChartOptionsCurrent;
-  protected chartOptionsPower: ChartConfiguration['options'] = this.baseChartOptionsPower;
-  protected chartOptionsBalance: ChartConfiguration['options'] = {
+  protected chartOptionsVoltage: ChartConfiguration<'line'>['options'] = this.baseChartOptionsVoltage;
+  protected chartOptionsCurrent: ChartConfiguration<'line'>['options'] = this.baseChartOptionsCurrent;
+  protected chartOptionsPower: ChartConfiguration<'line'>['options'] = this.baseChartOptionsPower;
+  protected chartOptionsBalance: ChartConfiguration<'line'>['options'] = {
     ...this.baseChartOptionsPower,
     plugins: {
       ...this.baseChartOptionsPower!.plugins,
@@ -186,10 +195,10 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     },
   };
 
-  protected chartDataVoltage: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataCurrent: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataPower: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataBalance: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataVoltage: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartDataCurrent: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartDataPower: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartDataBalance: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
 
   constructor() {
     effect(() => {
@@ -294,19 +303,19 @@ export class EnergiaComponent implements OnInit, OnDestroy {
   protected formatWh(value: number | null): string {
     if (!isNum(value)) return '-';
     if (Math.abs(value) < 0.01) return '0 Wh';
-    if (Math.abs(value) < 1) return `${value.toFixed(2)} Wh`;
-    return `${value.toFixed(1)} Wh`;
+    if (Math.abs(value) < 1) return `${formatDecimal(value, 2, 2)} Wh`;
+    return `${formatDecimal(value, 1, 1)} Wh`;
   }
 
   protected formatHours(value: number | null): string {
     if (!isNum(value)) return '-';
     if (value < 1) return `${Math.round(value * 60)} min`;
-    return `${value.toFixed(1)} h`;
+    return `${formatDecimal(value, 1, 1)} h`;
   }
 
   protected formatPct(value: number | null): string {
     if (!isNum(value)) return '-';
-    return `${value.toFixed(0)} %`;
+    return `${formatDecimal(value, 0, 0)} %`;
   }
 
   private parseIso(iso: string): number | null {
@@ -406,9 +415,9 @@ export class EnergiaComponent implements OnInit, OnDestroy {
   }
 
   private applyMobileTicks(
-    base: ChartConfiguration['options'],
+    base: ChartConfiguration<'line'>['options'],
     mobile: boolean,
-  ): ChartConfiguration['options'] {
+  ): ChartConfiguration<'line'>['options'] {
     const ticks = mobile ? 5 : 8;
     return {
       ...base,
@@ -443,10 +452,10 @@ export class EnergiaComponent implements OnInit, OnDestroy {
   }
 
   private buildScaledOptions(
-    base: ChartConfiguration['options'],
+    base: ChartConfiguration<'line'>['options'],
     range: { min: number; max: number } | null,
     minPad = 0.05,
-  ): ChartConfiguration['options'] {
+  ): ChartConfiguration<'line'>['options'] {
     if (!range) return base;
     const pad = Math.max((range.max - range.min) * 0.1, minPad);
     return {

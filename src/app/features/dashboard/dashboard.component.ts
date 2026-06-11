@@ -18,6 +18,7 @@ import { ApiService, type IrrigationSummaryResponse } from '../../core/services/
 import { SeoService } from '../../core/services/seo.service';
 import { JsonLdService } from '../../core/services/json-ld.service';
 import { environment } from '../../../environments/environment';
+import { chartTickLabel, formatDecimal } from '../../core/utils/format-locale';
 import type { Medicao } from '../../shared/models/medicao.model';
 
 function isNum(v: number | null | undefined): v is number {
@@ -154,7 +155,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   });
 
-  private readonly baseChartOptions: ChartConfiguration['options'] = {
+  private readonly baseChartOptions: ChartConfiguration<'line'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'index' },
@@ -184,16 +185,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
     },
   };
 
-  protected chartOptions: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsPress: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsTemp: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsUmid: ChartConfiguration['options'] = this.baseChartOptions;
-  protected chartOptionsClima: ChartConfiguration['options'] = this.baseChartOptions;
+  protected chartOptions: ChartConfiguration<'line'>['options'] = this.baseChartOptions;
+  protected chartOptionsPress: ChartConfiguration<'line'>['options'] = this.baseChartOptions;
+  protected chartOptionsTemp: ChartConfiguration<'line'>['options'] = this.baseChartOptions;
+  protected chartOptionsUmid: ChartConfiguration<'line'>['options'] = this.baseChartOptions;
+  protected chartOptionsClima: ChartConfiguration<'line'>['options'] = this.baseChartOptions;
 
-  protected chartDataTemp: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataUmid: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataClima: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartDataPress: ChartConfiguration['data'] = { labels: [], datasets: [] };
+  protected chartDataTemp: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartDataUmid: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartDataClima: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartDataPress: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
 
   constructor() {
     // Reagrupa charts quando o ponto de quebra muda (afeta maxTicksLimit/legenda).
@@ -417,9 +418,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ===== Charts =====
 
   private buildScaledOptions(
-    base: ChartConfiguration['options'],
+    base: ChartConfiguration<'line'>['options'],
     range: { min: number; max: number } | null,
-  ): ChartConfiguration['options'] {
+  ): ChartConfiguration<'line'>['options'] {
     if (!range) return base;
     const pad = Math.max((range.max - range.min) * 0.1, 0.2);
     return {
@@ -435,7 +436,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
-  private buildClimaChartBase(mobile: boolean): ChartConfiguration['options'] {
+  private buildClimaChartBase(mobile: boolean): ChartConfiguration<'line'>['options'] {
     const ticks = mobile ? 5 : 8;
     return {
       ...this.baseChartOptions,
@@ -444,6 +445,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
         legend: {
           display: true,
           labels: { color: CHART_TEXT, font: { size: 12 }, boxWidth: 12, padding: 16 },
+        },
+        tooltip: {
+          ...this.baseChartOptions!.plugins!.tooltip,
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.y;
+              if (v === null) return `${ctx.dataset.label}: -`;
+              const unit = ctx.dataset.yAxisID === 'y1' ? '%' : '°C';
+              return `${ctx.dataset.label}: ${formatDecimal(v, 0, 1)} ${unit}`;
+            },
+          },
         },
       },
       scales: {
@@ -457,7 +469,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           ticks: {
             color: CHART_TEXT,
             font: { size: 11 },
-            callback: (value) => `${value} °C`,
+            callback: (value) => chartTickLabel(value, '°C', 1),
           },
           border: { display: false },
         },
@@ -467,7 +479,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           ticks: {
             color: CHART_TEXT,
             font: { size: 11 },
-            callback: (value) => `${value} %`,
+            callback: (value) => chartTickLabel(value, '%', 1),
           },
           border: { display: false },
         },
@@ -475,11 +487,52 @@ export class DashboardComponent implements OnInit, OnDestroy {
     };
   }
 
+  private buildSingleChartOptions(
+    unit: string,
+    maxFrac: number,
+    mobile: boolean,
+  ): ChartConfiguration<'line'>['options'] {
+    const ticks = mobile ? 5 : 8;
+    return {
+      ...this.baseChartOptions,
+      plugins: {
+        ...this.baseChartOptions!.plugins,
+        tooltip: {
+          ...this.baseChartOptions!.plugins!.tooltip,
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.y;
+              return v === null
+                ? `${ctx.dataset.label}: -`
+                : `${ctx.dataset.label}: ${formatDecimal(v, 0, maxFrac)} ${unit}`;
+            },
+          },
+        },
+      },
+      scales: {
+        ...this.baseChartOptions!.scales,
+        x: {
+          ...((this.baseChartOptions!.scales as Record<string, unknown>)['x'] as object),
+          ticks: { color: CHART_TEXT, maxTicksLimit: ticks, font: { size: 11 } },
+          grid: { display: false },
+        },
+        y: {
+          ...((this.baseChartOptions!.scales as Record<string, unknown>)['y'] as object),
+          ticks: {
+            color: CHART_TEXT,
+            font: { size: 11 },
+            callback: (value) => chartTickLabel(value, unit, maxFrac),
+          },
+        },
+      },
+    };
+  }
+
   private buildDualScaledOptions(
-    base: ChartConfiguration['options'],
+    base: ChartConfiguration<'line'>['options'],
     leftRange: { min: number; max: number } | null,
     rightRange: { min: number; max: number } | null,
-  ): ChartConfiguration['options'] {
+  ): ChartConfiguration<'line'>['options'] {
     if (!leftRange && !rightRange) return base;
 
     const padFor = (range: { min: number; max: number }, minPad: number) =>
@@ -515,23 +568,27 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildPressureScaledOptions(
-    base: ChartConfiguration['options'],
+    base: ChartConfiguration<'line'>['options'],
     range: { min: number; max: number } | null,
-  ): ChartConfiguration['options'] {
+  ): ChartConfiguration<'line'>['options'] {
     if (!range) return base;
     const span = range.max - range.min;
     const stepSize = span <= 6 ? 1 : span <= 12 ? 2 : span <= 30 ? 5 : 10;
     const min = Math.floor(range.min / stepSize) * stepSize - stepSize;
     const max = Math.ceil(range.max / stepSize) * stepSize + stepSize;
+    const baseY = (base!.scales as Record<string, unknown>)['y'] as {
+      ticks?: { callback?: (value: string | number) => string };
+    };
     return {
       ...base,
       scales: {
         ...base!.scales,
         y: {
-          ...((base!.scales as Record<string, unknown>)['y'] as object),
+          ...baseY,
           min,
           max,
           ticks: {
+            ...baseY.ticks,
             color: CHART_TEXT,
             font: { size: 11 },
             stepSize,
@@ -549,23 +606,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private refreshChartOptions(mobile: boolean): void {
-    const ticks = mobile ? 5 : 8;
-    const single: ChartConfiguration['options'] = {
-      ...this.baseChartOptions,
-      scales: {
-        ...this.baseChartOptions!.scales,
-        x: {
-          ...((this.baseChartOptions!.scales as Record<string, unknown>)['x'] as object),
-          ticks: { color: CHART_TEXT, maxTicksLimit: ticks, font: { size: 11 } },
-          grid: { display: false },
-        },
-      },
-    };
     const clima = this.buildClimaChartBase(mobile);
-    this.chartOptions = single;
-    this.chartOptionsPress = single;
-    this.chartOptionsTemp = single;
-    this.chartOptionsUmid = single;
+    this.chartOptions = this.buildSingleChartOptions('°C', 1, mobile);
+    this.chartOptionsTemp = this.buildSingleChartOptions('°C', 1, mobile);
+    this.chartOptionsUmid = this.buildSingleChartOptions('%', 1, mobile);
+    this.chartOptionsPress = this.buildSingleChartOptions('hPa', 0, mobile);
     this.chartOptionsClima = clima;
   }
 

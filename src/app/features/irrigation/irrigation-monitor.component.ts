@@ -9,6 +9,7 @@ import { ChartConfiguration, ChartDataset } from 'chart.js';
 import { ApiService, type IrrigationSummaryResponse } from '../../core/services/api.service';
 import { SeoService } from '../../core/services/seo.service';
 import { environment } from '../../../environments/environment';
+import { chartTickLabel, formatDecimal } from '../../core/utils/format-locale';
 import type { Medicao } from '../../shared/models/medicao.model';
 
 const MANUAL_DURATION_MIN_S = 1;
@@ -62,8 +63,8 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
 
   protected readonly now = signal(Date.now());
 
-  protected chartDataSolo: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  protected chartOptionsSolo: ChartConfiguration['options'] = this.buildChartOptions();
+  protected chartDataSolo: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
+  protected chartOptionsSolo: ChartConfiguration<'line'>['options'] = this.buildChartOptions();
 
   private pollingSub: Subscription | null = null;
   private tickerSub: Subscription | null = null;
@@ -300,7 +301,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
     this.chartDataSolo = { labels, datasets: [dsZone1, dsZone2] };
   }
 
-  private buildChartOptions(): ChartConfiguration['options'] {
+  private buildChartOptions(): ChartConfiguration<'line'>['options'] {
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -322,7 +323,9 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
           callbacks: {
             label: (ctx) => {
               const v = ctx.parsed.y;
-              return v === null ? `${ctx.dataset.label}: -` : `${ctx.dataset.label}: ${v} %`;
+              return v === null
+                ? `${ctx.dataset.label}: -`
+                : `${ctx.dataset.label}: ${formatDecimal(v, 0, 1)} %`;
             },
           },
         },
@@ -339,7 +342,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
           ticks: {
             color: CHART_TEXT,
             font: { size: 11 },
-            callback: (value) => `${value} %`,
+            callback: (value) => chartTickLabel(value, '%', 1),
           },
           border: { display: false },
         },
