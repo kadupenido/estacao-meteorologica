@@ -47,6 +47,11 @@ export class ContaComponent implements OnInit {
     });
   }
 
+  protected goToLogin(): void {
+    this.auth.logout();
+    void this.router.navigate(['/login'], { queryParams: { returnUrl: '/conta' } });
+  }
+
   protected logout(): void {
     this.auth.logout();
     void this.router.navigate(['/login']);

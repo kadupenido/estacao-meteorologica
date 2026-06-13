@@ -8,7 +8,7 @@
 } @else if (loadError(); as err) {
   <h1>Conta</h1>
   <p class="alert" role="alert">{{ err }}</p>
-  <p><a routerLink="/login">Voltar ao login</a></p>
+  <p><a href="/login" (click)="goToLogin(); $event.preventDefault()">Voltar ao login</a></p>
 } @else {
   <p class="loading" aria-live="polite">A carregar…</p>
 }

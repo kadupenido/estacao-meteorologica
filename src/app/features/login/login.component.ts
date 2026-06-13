@@ -38,9 +38,19 @@ export class LoginComponent implements OnInit {
   ngOnInit(): void {
     this.auth.syncFromStorage();
     if (this.auth.isLoggedIn()) {
-      void this.router.navigateByUrl('/clima');
-      return;
+      this.auth.me().subscribe({
+        next: () => void this.router.navigateByUrl('/clima'),
+        error: () => {
+          this.auth.logout();
+          this.setSeo();
+        },
+      });
+    } else {
+      this.setSeo();
     }
+  }
+
+  private setSeo(): void {
     this.seo.update({
       title: 'Entrar — Monitor Ambiental',
       description: 'Inicie sessão para aceder à área reservada.',
