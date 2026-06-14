@@ -7,7 +7,7 @@ function med(
   id: number,
   created_at: string,
   overrides: Partial<
-    Pick<Medicao, 'potencia_painel' | 'potencia_sistema' | 'corrente_painel'>
+    Pick<Medicao, 'potencia_painel' | 'potencia_sistema' | 'corrente_painel' | 'corrente_sistema'>
   > = {},
 ): Medicao {
   return {
@@ -75,15 +75,25 @@ describe('computeEnergyDaySummary', () => {
 
   it('computes panel and system energy with tail on last sample', () => {
     const summary = computeEnergyDaySummary([
-      med(1, '2025-06-10T10:00:00Z', { potencia_painel: 1000, potencia_sistema: 400 }),
-      med(2, '2025-06-10T11:00:00Z', { potencia_painel: 1000, potencia_sistema: 400 }),
+      med(1, '2025-06-10T10:00:00Z', {
+        potencia_painel: 1000,
+        potencia_sistema: 400,
+        corrente_painel: 120,
+        corrente_sistema: 50,
+      }),
+      med(2, '2025-06-10T11:00:00Z', {
+        potencia_painel: 1000,
+        potencia_sistema: 400,
+        corrente_painel: 150,
+        corrente_sistema: 60,
+      }),
     ]);
 
     expect(summary.energiaPainelWh).toBeCloseTo(2, 5);
     expect(summary.energiaSistemaWh).toBeCloseTo(0.8, 5);
     expect(summary.saldoWh).toBeCloseTo(1.2, 5);
-    expect(summary.picoPainelW).toBe(1);
-    expect(summary.picoSistemaW).toBeCloseTo(0.4, 5);
+    expect(summary.picoPainelMa).toBe(150);
+    expect(summary.picoSistemaMa).toBe(60);
     expect(summary.horasGeracao).toBeCloseTo(1, 5);
     expect(summary.coberturaSolarPct).toBe(100);
   });

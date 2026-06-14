@@ -18,8 +18,8 @@ export interface EnergyDaySummary {
   energiaPainelWh: number | null;
   energiaSistemaWh: number | null;
   saldoWh: number | null;
-  picoPainelW: number | null;
-  picoSistemaW: number | null;
+  picoPainelMa: number | null;
+  picoSistemaMa: number | null;
   horasGeracao: number | null;
   coberturaSolarPct: number | null;
   sampleCount: number;
@@ -86,10 +86,10 @@ function integrateWithTail(
   return (base ?? 0) + tailWh;
 }
 
-function peakPowerW(values: Array<number | null>): number | null {
+function peakCurrentMa(values: Array<number | null>): number | null {
   const nums = values.filter(isNum);
   if (nums.length === 0) return null;
-  return Math.max(...nums) / 1000;
+  return Math.max(...nums);
 }
 
 function computeHorasGeracao(
@@ -175,8 +175,8 @@ export function computeEnergyDaySummary(medicoes: Medicao[]): EnergyDaySummary {
     energiaPainelWh,
     energiaSistemaWh,
     saldoWh,
-    picoPainelW: peakPowerW(sorted.map((row) => row.med.potencia_painel)),
-    picoSistemaW: peakPowerW(sorted.map((row) => row.med.potencia_sistema)),
+    picoPainelMa: peakCurrentMa(sorted.map((row) => row.med.corrente_painel)),
+    picoSistemaMa: peakCurrentMa(sorted.map((row) => row.med.corrente_sistema)),
     horasGeracao: computeHorasGeracao(sorted),
     coberturaSolarPct: computeCoberturaSolarPct(sorted),
     sampleCount: medicoes.length,

@@ -36,9 +36,6 @@
             @if (c.corrente_painel !== null) {
               <span class="device-chip-sub">{{ c.corrente_painel | number:'1.0-0' }} mA</span>
             }
-            @if (mwToW(c.potencia_painel); as pw) {
-              <span class="device-chip-sub">{{ pw | number:'1.3-3' }} W</span>
-            }
             <span class="device-chip-label">Painel solar</span>
           </span>
         </div>
@@ -55,9 +52,6 @@
             </span>
             @if (c.corrente_sistema !== null) {
               <span class="device-chip-sub">{{ c.corrente_sistema | number:'1.0-0' }} mA</span>
-            }
-            @if (mwToW(c.potencia_sistema); as sw) {
-              <span class="device-chip-sub">{{ sw | number:'1.3-3' }} W</span>
             }
             <span class="device-chip-label">Sistema</span>
           </span>
@@ -144,13 +138,13 @@
           <div class="card summary-card">
             <span class="card-label">Pico painel</span>
             <span class="card-value">
-              @if (s.picoPainelW !== null) { {{ s.picoPainelW | number:'1.3-3' }} W } @else { - }
+              @if (s.picoPainelMa !== null) { {{ s.picoPainelMa | number:'1.0-0' }} mA } @else { - }
             </span>
           </div>
           <div class="card summary-card">
             <span class="card-label">Pico sistema</span>
             <span class="card-value">
-              @if (s.picoSistemaW !== null) { {{ s.picoSistemaW | number:'1.3-3' }} W } @else { - }
+              @if (s.picoSistemaMa !== null) { {{ s.picoSistemaMa | number:'1.0-0' }} mA } @else { - }
             </span>
           </div>
           <div class="card summary-card">
@@ -200,15 +194,6 @@
                 </div>
               </div>
             }
-            @case ('power') {
-              <div class="chart-container">
-                <h3 class="chart-title">Potência painel vs sistema</h3>
-                <div class="chart-wrapper">
-                  <canvas baseChart [data]="chartDataPower" [options]="chartOptionsPower" type="line"
-                    role="img" aria-label="Gráfico de potência do painel solar e do sistema ao longo do dia em watts"></canvas>
-                </div>
-              </div>
-            }
             @case ('balance') {
               <div class="chart-container">
                 <h3 class="chart-title">Saldo instantâneo (painel − sistema)</h3>
@@ -234,13 +219,6 @@
             <div class="chart-wrapper">
               <canvas baseChart [data]="chartDataCurrent" [options]="chartOptionsCurrent" type="line"
                 role="img" aria-label="Gráfico de corrente do painel solar e do sistema ao longo do dia em miliamperes"></canvas>
-            </div>
-          </div>
-          <div class="chart-container">
-            <h3 class="chart-title">Potência painel vs sistema</h3>
-            <div class="chart-wrapper">
-              <canvas baseChart [data]="chartDataPower" [options]="chartOptionsPower" type="line"
-                role="img" aria-label="Gráfico de potência do painel solar e do sistema ao longo do dia em watts"></canvas>
             </div>
           </div>
           <div class="chart-container">

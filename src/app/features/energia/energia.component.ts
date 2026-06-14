@@ -27,7 +27,7 @@ function isNum(v: number | null | undefined): v is number {
 
 export type Status = 'ok' | 'warning' | 'critical' | 'unknown';
 export type SaldoTone = 'positive' | 'neutral' | 'negative' | 'unknown';
-export type ChartTab = 'voltage' | 'current' | 'power' | 'balance';
+export type ChartTab = 'voltage' | 'current' | 'balance';
 
 function buildBaseChartOptions(yUnit: string, maxFrac: number): ChartConfiguration<'line'>['options'] {
   return {
@@ -110,7 +110,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
   protected readonly chartTabs: ReadonlyArray<{ id: ChartTab; label: string }> = [
     { id: 'voltage', label: 'Tensão' },
     { id: 'current', label: 'Corrente' },
-    { id: 'power', label: 'Potência' },
     { id: 'balance', label: 'Saldo' },
   ];
 
@@ -126,10 +125,8 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     return {
       tensao_painel: m.tensao_painel,
       corrente_painel: m.corrente_painel,
-      potencia_painel: m.potencia_painel,
       tensao_sistema: m.tensao_sistema,
       corrente_sistema: m.corrente_sistema,
-      potencia_sistema: m.potencia_sistema,
       created_at: m.created_at,
     };
   });
@@ -186,7 +183,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
 
   protected chartOptionsVoltage: ChartConfiguration<'line'>['options'] = this.baseChartOptionsVoltage;
   protected chartOptionsCurrent: ChartConfiguration<'line'>['options'] = this.baseChartOptionsCurrent;
-  protected chartOptionsPower: ChartConfiguration<'line'>['options'] = this.baseChartOptionsPower;
   protected chartOptionsBalance: ChartConfiguration<'line'>['options'] = {
     ...this.baseChartOptionsPower,
     plugins: {
@@ -197,7 +193,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
 
   protected chartDataVoltage: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
   protected chartDataCurrent: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
-  protected chartDataPower: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
   protected chartDataBalance: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
 
   constructor() {
@@ -214,9 +209,9 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     this.seo.update({
       title: 'Energia — Monitor Ambiental',
       description:
-        'Painel solar, consumo do sistema e energia estimada do dia com gráficos de tensão, corrente, potência e saldo energético.',
+        'Painel solar, consumo do sistema e energia estimada do dia com gráficos de tensão, corrente e saldo energético.',
       keywords:
-        'energia solar, painel solar, consumo, tensão, corrente, potência, Wh, monitor ambiental, estação meteorológica',
+        'energia solar, painel solar, consumo, tensão, corrente, Wh, monitor ambiental, estação meteorológica',
       robots: 'index, follow',
     });
 
@@ -294,10 +289,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
 
   protected setChartAtivo(tab: ChartTab): void {
     this.chartAtivo.set(tab);
-  }
-
-  protected mwToW(mw: number | null): number | null {
-    return isNum(mw) ? mw / 1000 : null;
   }
 
   protected formatWh(value: number | null): string {
@@ -435,7 +426,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
   private refreshChartOptions(mobile: boolean): void {
     this.chartOptionsVoltage = this.applyMobileTicks(this.baseChartOptionsVoltage, mobile);
     this.chartOptionsCurrent = this.applyMobileTicks(this.baseChartOptionsCurrent, mobile);
-    this.chartOptionsPower = this.applyMobileTicks(this.baseChartOptionsPower, mobile);
     this.chartOptionsBalance = {
       ...this.applyMobileTicks(this.baseChartOptionsPower, mobile),
       plugins: {
@@ -495,12 +485,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
     const sistemaCurrent = meds.map((m) =>
       isNum(m.corrente_sistema) ? m.corrente_sistema : null,
     ) as (number | null)[];
-    const painelPower = meds.map((m) =>
-      isNum(m.potencia_painel) ? m.potencia_painel / 1000 : null,
-    ) as (number | null)[];
-    const sistemaPower = meds.map((m) =>
-      isNum(m.potencia_sistema) ? m.potencia_sistema / 1000 : null,
-    ) as (number | null)[];
     const balance = meds.map((m) => {
       if (!isNum(m.potencia_painel) || !isNum(m.potencia_sistema)) return null;
       return (Math.max(0, m.potencia_painel) - m.potencia_sistema) / 1000;
@@ -546,26 +530,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
       fill: false,
     };
 
-    const dsPainelPower: ChartDataset<'line'> = {
-      ...baseLine,
-      data: painelPower,
-      label: 'Painel (W)',
-      borderColor: COLOR_SOLAR,
-      backgroundColor: 'rgba(251, 191, 36, 0.2)',
-      pointHoverBackgroundColor: COLOR_SOLAR,
-      fill: false,
-    };
-
-    const dsSistemaPower: ChartDataset<'line'> = {
-      ...baseLine,
-      data: sistemaPower,
-      label: 'Sistema (W)',
-      borderColor: COLOR_SYSTEM,
-      backgroundColor: 'rgba(6, 182, 212, 0.2)',
-      pointHoverBackgroundColor: COLOR_SYSTEM,
-      fill: false,
-    };
-
     const dsBalance: ChartDataset<'line'> = {
       ...baseLine,
       data: balance,
@@ -578,7 +542,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
 
     this.chartDataVoltage = { labels, datasets: [dsPainelVoltage, dsSistemaVoltage] };
     this.chartDataCurrent = { labels, datasets: [dsPainelCurrent, dsSistemaCurrent] };
-    this.chartDataPower = { labels, datasets: [dsPainelPower, dsSistemaPower] };
     this.chartDataBalance = { labels, datasets: [dsBalance] };
 
     this.chartOptionsVoltage = this.buildScaledOptions(
@@ -589,10 +552,6 @@ export class EnergiaComponent implements OnInit, OnDestroy {
       this.chartOptionsCurrent,
       this.rangeOf([...painelCurrent, ...sistemaCurrent]),
       1,
-    );
-    this.chartOptionsPower = this.buildScaledOptions(
-      this.chartOptionsPower,
-      this.rangeOf([...painelPower, ...sistemaPower]),
     );
     this.chartOptionsBalance = this.buildScaledOptions(
       this.chartOptionsBalance,
