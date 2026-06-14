@@ -69,6 +69,37 @@ export interface IrrigationSummaryResponse {
   zone_2: IrrigationZoneSummary;
 }
 
+export interface DeviceConfig {
+  soil1_dry_mv: number;
+  soil1_wet_mv: number;
+  soil2_dry_mv: number;
+  soil2_wet_mv: number;
+  altitude_local: number;
+  manual_irrigation_max_s: number;
+  pump_sample_interval_s: number;
+  deep_sleep_enabled: boolean;
+  capture_interval_seconds: number;
+  deep_sleep_seconds: number;
+  samples_per_api_upload: number;
+  http_timeout_ms: number;
+  http_max_retries: number;
+  wifi_timeout_ms: number;
+  cold_boot_usb_wait_ms: number;
+  ntp_server_primary: string;
+  ntp_server_secondary: string;
+  ntp_sync_wait_ms: number;
+  ntp_min_valid_year: number;
+  ntp_gmt_offset_sec: number;
+  ntp_daylight_offset_sec: number;
+  pending_batch_max_items: number;
+  pending_batch_max_bytes: number;
+  pending_max_bytes: number;
+  pending_max_lines: number;
+  updated_at?: string | null;
+}
+
+export type DeviceConfigInput = Omit<DeviceConfig, 'updated_at'>;
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = environment.apiUrl;
@@ -106,5 +137,13 @@ export class ApiService {
 
   cancelIrrigationManual(id: number): Observable<IrrigationManualCommand> {
     return this.http.delete<IrrigationManualCommand>(`${this.baseUrl}/irrigation/manual/${id}`);
+  }
+
+  getDeviceConfig(): Observable<DeviceConfig> {
+    return this.http.get<DeviceConfig>(`${this.baseUrl}/device/config`);
+  }
+
+  putDeviceConfig(payload: DeviceConfigInput): Observable<DeviceConfig> {
+    return this.http.put<DeviceConfig>(`${this.baseUrl}/device/config`, payload);
   }
 }

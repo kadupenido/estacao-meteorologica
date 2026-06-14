@@ -1,0 +1,204 @@
+<div class="irrigation-page">
+  <header class="header">
+    <div class="header-main">
+      <h1 class="title">Configurações do dispositivo</h1>
+      <p class="location">
+        Calibração, temporização, NTP e fila offline. Wi-Fi, API e pinos de hardware permanecem no
+        firmware local.
+      </p>
+      @if (lastUpdated(); as updated) {
+        <p class="location">Última atualização: {{ updated | date: 'short' }}</p>
+      }
+    </div>
+    <div class="page-actions">
+      <a routerLink="/conta" class="date-chip">Conta</a>
+      <button type="button" class="date-chip" (click)="loadConfig()">Recarregar</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Carregando configuração…</p>
+    </div>
+  } @else {
+    <section class="settings-section">
+      <p class="hint-banner">
+        A calibração do solo pode levar até um ciclo de sono para aplicar. Timeouts e intervalos de
+        sono passam a valer após o próximo acordar com Wi-Fi.
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="save()" class="settings-form">
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Calibração do solo e altitude</h2>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Zona 1 — seco (mV)</span>
+              <input type="number" formControlName="soil1_dry_mv" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Zona 1 — úmido (mV)</span>
+              <input type="number" formControlName="soil1_wet_mv" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Zona 2 — seco (mV)</span>
+              <input type="number" formControlName="soil2_dry_mv" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Zona 2 — úmido (mV)</span>
+              <input type="number" formControlName="soil2_wet_mv" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Altitude local (m)</span>
+              <input type="number" formControlName="altitude_local" step="1" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Irrigação (limites do firmware)</h2>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Máx. irrigação manual (s)</span>
+              <input type="number" formControlName="manual_irrigation_max_s" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Amostragem com bomba ligada (s)</span>
+              <input type="number" formControlName="pump_sample_interval_s" step="1" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Temporização</h2>
+          <div class="zone-enable">
+            <span class="field-label">Modo de operação</span>
+            <div class="zone-enable-options" role="radiogroup" aria-label="Deep sleep">
+              <button
+                type="button"
+                class="date-chip"
+                role="radio"
+                [class.active]="form.controls.deep_sleep_enabled.value"
+                [attr.aria-checked]="form.controls.deep_sleep_enabled.value"
+                (click)="setDeepSleepEnabled(true)"
+              >
+                Deep sleep
+              </button>
+              <button
+                type="button"
+                class="date-chip"
+                role="radio"
+                [class.active]="!form.controls.deep_sleep_enabled.value"
+                [attr.aria-checked]="!form.controls.deep_sleep_enabled.value"
+                (click)="setDeepSleepEnabled(false)"
+              >
+                Sempre ativo
+              </button>
+            </div>
+          </div>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Intervalo deep sleep (s)</span>
+              <input type="number" formControlName="deep_sleep_seconds" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Amostras por envio à API</span>
+              <input type="number" formControlName="samples_per_api_upload" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Intervalo modo ativo (s)</span>
+              <input type="number" formControlName="capture_interval_seconds" step="1" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Timeouts de rede</h2>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">HTTP timeout (ms)</span>
+              <input type="number" formControlName="http_timeout_ms" step="100" />
+            </label>
+            <label class="field">
+              <span class="field-label">Tentativas HTTP</span>
+              <input type="number" formControlName="http_max_retries" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Wi-Fi timeout (ms)</span>
+              <input type="number" formControlName="wifi_timeout_ms" step="100" />
+            </label>
+            <label class="field">
+              <span class="field-label">Espera USB boot frio (ms)</span>
+              <input type="number" formControlName="cold_boot_usb_wait_ms" step="100" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">NTP</h2>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Servidor primário</span>
+              <input type="text" formControlName="ntp_server_primary" />
+            </label>
+            <label class="field">
+              <span class="field-label">Servidor secundário</span>
+              <input type="text" formControlName="ntp_server_secondary" />
+            </label>
+            <label class="field">
+              <span class="field-label">Espera sincronização (ms)</span>
+              <input type="number" formControlName="ntp_sync_wait_ms" step="100" />
+            </label>
+            <label class="field">
+              <span class="field-label">Ano mínimo válido</span>
+              <input type="number" formControlName="ntp_min_valid_year" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Offset GMT (s)</span>
+              <input type="number" formControlName="ntp_gmt_offset_sec" step="3600" />
+            </label>
+            <label class="field">
+              <span class="field-label">Offset horário de verão (s)</span>
+              <input type="number" formControlName="ntp_daylight_offset_sec" step="3600" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Fila offline</h2>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Máx. itens por lote</span>
+              <input type="number" formControlName="pending_batch_max_items" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Máx. bytes por lote</span>
+              <input type="number" formControlName="pending_batch_max_bytes" step="1024" />
+            </label>
+            <label class="field">
+              <span class="field-label">Tamanho máx. do arquivo (bytes)</span>
+              <input type="number" formControlName="pending_max_bytes" step="1024" />
+            </label>
+            <label class="field">
+              <span class="field-label">Máx. linhas na fila</span>
+              <input type="number" formControlName="pending_max_lines" step="10" />
+            </label>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-submit" [disabled]="saving()">
+            {{ saving() ? 'Salvando…' : 'Salvar configurações' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (error(); as err) {
+    <p class="error-message feedback-banner" role="alert">{{ err }}</p>
+  }
+  @if (success(); as ok) {
+    <p class="success-message feedback-banner" role="status">{{ ok }}</p>
+  }
+</div>
