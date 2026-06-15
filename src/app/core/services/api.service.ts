@@ -94,6 +94,14 @@ export interface DeviceConfig {
   pending_batch_max_bytes: number;
   pending_max_bytes: number;
   pending_max_lines: number;
+  panel_voltage_noise_floor_v: number;
+  sensor_average_rounds: number;
+  adc_samples: number;
+  ina_average_rounds: number;
+  ina_sample_delay_ms: number;
+  pump_delay_chunk_ms: number;
+  http_retry_delay_ms: number;
+  relay_active_high: boolean;
   updated_at?: string | null;
 }
 

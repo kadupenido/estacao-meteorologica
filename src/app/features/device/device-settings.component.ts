@@ -53,6 +53,14 @@ export class DeviceSettingsComponent implements OnInit {
     pending_batch_max_bytes: [16384, [Validators.required, Validators.min(1024), Validators.max(65536)]],
     pending_max_bytes: [262144, [Validators.required, Validators.min(8192), Validators.max(1048576)]],
     pending_max_lines: [800, [Validators.required, Validators.min(10), Validators.max(5000)]],
+    panel_voltage_noise_floor_v: [1.0, [Validators.required, Validators.min(0), Validators.max(6)]],
+    sensor_average_rounds: [3, [Validators.required, Validators.min(1), Validators.max(10)]],
+    adc_samples: [16, [Validators.required, Validators.min(4), Validators.max(64)]],
+    ina_average_rounds: [5, [Validators.required, Validators.min(1), Validators.max(20)]],
+    ina_sample_delay_ms: [50, [Validators.required, Validators.min(10), Validators.max(500)]],
+    pump_delay_chunk_ms: [500, [Validators.required, Validators.min(100), Validators.max(2000)]],
+    http_retry_delay_ms: [2000, [Validators.required, Validators.min(500), Validators.max(30000)]],
+    relay_active_high: [true],
   });
 
   ngOnInit(): void {
@@ -84,6 +92,12 @@ export class DeviceSettingsComponent implements OnInit {
 
   protected setDeepSleepEnabled(enabled: boolean): void {
     this.form.controls.deep_sleep_enabled.setValue(enabled);
+    this.error.set(null);
+    this.success.set(null);
+  }
+
+  protected setRelayActiveHigh(activeHigh: boolean): void {
+    this.form.controls.relay_active_high.setValue(activeHigh);
     this.error.set(null);
     this.success.set(null);
   }

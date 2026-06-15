@@ -3,8 +3,8 @@
     <div class="header-main">
       <h1 class="title">Configurações do dispositivo</h1>
       <p class="location">
-        Calibração, temporização, NTP e fila offline. Wi-Fi, API e pinos de hardware permanecem no
-        firmware local.
+        Calibração, temporização, amostragem, NTP e fila offline. Wi-Fi, API e pinos de hardware
+        permanecem no firmware local.
       </p>
       @if (lastUpdated(); as updated) {
         <p class="location">Última atualização: {{ updated | date: 'short' }}</p>
@@ -24,8 +24,8 @@
   } @else {
     <section class="settings-section">
       <p class="hint-banner">
-        A calibração do solo pode levar até um ciclo de sono para aplicar. Timeouts e intervalos de
-        sono passam a valer após o próximo acordar com Wi-Fi.
+        A calibração do solo e a polaridade do relé podem levar até um ciclo de sono para aplicar.
+        Amostragem, timeouts e intervalos de sono passam a valer após o próximo acordar com Wi-Fi.
       </p>
 
       <form [formGroup]="form" (ngSubmit)="save()" class="settings-form">
@@ -66,6 +66,75 @@
               <span class="field-label">Amostragem com bomba ligada (s)</span>
               <input type="number" formControlName="pump_sample_interval_s" step="1" />
             </label>
+            <label class="field">
+              <span class="field-label">Fatia do delay na bomba (ms)</span>
+              <input type="number" formControlName="pump_delay_chunk_ms" step="50" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Amostragem de sensores</h2>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Rodadas de média por ciclo</span>
+              <input type="number" formControlName="sensor_average_rounds" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Amostras ADC do solo</span>
+              <input type="number" formControlName="adc_samples" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Amostras INA219 por ciclo</span>
+              <input type="number" formControlName="ina_average_rounds" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Pausa entre amostras INA (ms)</span>
+              <input type="number" formControlName="ina_sample_delay_ms" step="10" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Painel solar</h2>
+          <p class="location">
+            Leituras abaixo deste limiar (V) são enviadas como 0. Use 0 para desativar o filtro. Os
+            alertas visuais do dashboard usam limiares separados em environment.ts.
+          </p>
+          <div class="field-grid field-grid-2">
+            <label class="field">
+              <span class="field-label">Limiar de ruído (V)</span>
+              <input type="number" formControlName="panel_voltage_noise_floor_v" step="0.1" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card form-zone-card">
+          <h2 class="subsection-title">Hardware</h2>
+          <div class="zone-enable">
+            <span class="field-label">Polaridade do relé</span>
+            <div class="zone-enable-options" role="radiogroup" aria-label="Polaridade do relé">
+              <button
+                type="button"
+                class="date-chip"
+                role="radio"
+                [class.active]="form.controls.relay_active_high.value"
+                [attr.aria-checked]="form.controls.relay_active_high.value"
+                (click)="setRelayActiveHigh(true)"
+              >
+                Ativo em HIGH
+              </button>
+              <button
+                type="button"
+                class="date-chip"
+                role="radio"
+                [class.active]="!form.controls.relay_active_high.value"
+                [attr.aria-checked]="!form.controls.relay_active_high.value"
+                (click)="setRelayActiveHigh(false)"
+              >
+                Ativo em LOW
+              </button>
+            </div>
           </div>
         </section>
 
@@ -118,6 +187,10 @@
             <label class="field">
               <span class="field-label">Tentativas HTTP</span>
               <input type="number" formControlName="http_max_retries" step="1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Espera entre tentativas HTTP (ms)</span>
+              <input type="number" formControlName="http_retry_delay_ms" step="100" />
             </label>
             <label class="field">
               <span class="field-label">Wi-Fi timeout (ms)</span>
