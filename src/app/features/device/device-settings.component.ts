@@ -39,7 +39,6 @@ export class DeviceSettingsComponent implements OnInit {
     deep_sleep_enabled: [true],
     capture_interval_seconds: [30, [Validators.required, Validators.min(5), Validators.max(3600)]],
     deep_sleep_seconds: [60, [Validators.required, Validators.min(10), Validators.max(3600)]],
-    samples_per_api_upload: [10, [Validators.required, Validators.min(1), Validators.max(60)]],
     http_timeout_ms: [10000, [Validators.required, Validators.min(1000), Validators.max(120000)]],
     http_max_retries: [3, [Validators.required, Validators.min(0), Validators.max(10)]],
     wifi_timeout_ms: [20000, [Validators.required, Validators.min(1000), Validators.max(120000)]],

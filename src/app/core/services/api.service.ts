@@ -80,7 +80,6 @@ export interface DeviceConfig {
   deep_sleep_enabled: boolean;
   capture_interval_seconds: number;
   deep_sleep_seconds: number;
-  samples_per_api_upload: number;
   http_timeout_ms: number;
   http_max_retries: number;
   wifi_timeout_ms: number;
