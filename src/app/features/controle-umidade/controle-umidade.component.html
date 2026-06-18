@@ -1,0 +1,246 @@
+<div class="irrigation-page">
+  <header class="header">
+    <div class="header-main">
+      <h1 class="title">Controle de umidade</h1>
+      <p class="location">Monitoramento do ambiente, energia e configuração do ventilador.</p>
+    </div>
+    <div class="page-actions">
+      <button type="button" class="date-chip" (click)="reload()">Atualizar agora</button>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Carregando dados…</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state" role="alert">
+      <p>Falha ao carregar dados.</p>
+      <button type="button" class="btn-retry" (click)="reload()">Tentar novamente</button>
+    </div>
+  } @else if (resumo(); as s) {
+    <section class="zones-section" aria-live="polite">
+      <h2 class="section-title">Estado atual</h2>
+      <div class="status-grid">
+        <article class="card zone-card">
+          <div class="zone-card-top">
+            <div class="zone-card-heading">
+              <div class="zone-title-row">
+                <h3 class="zone-name">Controle</h3>
+                <span
+                  class="zone-status"
+                  [class.zone-status-active]="s.active"
+                  [class.zone-status-inactive]="!s.active"
+                >
+                  {{ s.active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </div>
+              <div class="zone-value-row">
+                <span class="card-value">
+                  @if (s.current_umidade != null) {
+                    {{ s.current_umidade | number: '1.0-1' }}
+                  } @else {
+                    -
+                  }
+                </span>
+                <span class="zone-unit">%</span>
+              </div>
+              <span class="card-label">Umidade ambiente (setpoint {{ s.setpoint_pct ?? '-' }}%)</span>
+            </div>
+          </div>
+          <dl class="zone-meta">
+            <div class="zone-meta-row">
+              <dt>Temperatura</dt>
+              <dd>
+                @if (s.current_temperatura != null) {
+                  {{ s.current_temperatura | number: '1.0-1' }} °C
+                } @else {
+                  -
+                }
+              </dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Leitura em</dt>
+              <dd>{{ formatDateTime(s.readings_at) }}</dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Último ventilador</dt>
+              <dd>{{ formatDateTime(s.last_fan_at) }}</dd>
+            </div>
+            <div class="zone-meta-row">
+              <dt>Tempo ativo</dt>
+              <dd>{{ s.last_fan_duration_s ?? '-' }} s</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="card zone-card">
+          <div class="zone-card-top">
+            <div class="zone-card-heading">
+              <h3 class="zone-name">Energia</h3>
+              <div class="zone-value-row">
+                <span class="card-value">
+                  @if (s.current_tensao_sistema != null) {
+                    {{ s.current_tensao_sistema | number: '1.1-2' }}
+                  } @else {
+                    -
+                  }
+                </span>
+                <span class="zone-unit">V</span>
+              </div>
+              <span class="card-label">Tensão do sistema</span>
+            </div>
+          </div>
+          <dl class="zone-meta">
+            <div class="zone-meta-row">
+              <dt>Corrente</dt>
+              <dd>{{ formatCorrente(s.current_corrente_sistema) }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2 class="section-title">Configuração</h2>
+      <form [formGroup]="form" (ngSubmit)="save()" class="settings-form">
+        <section class="card form-zone-card">
+          <div class="zone-card-header">
+            <div class="zone-enable">
+              <span class="field-label" id="active-label">Modo automático</span>
+              <div class="zone-enable-options" role="radiogroup" aria-labelledby="active-label">
+                <button
+                  type="button"
+                  class="date-chip"
+                  role="radio"
+                  [class.active]="form.controls.active.value"
+                  [attr.aria-checked]="form.controls.active.value"
+                  (click)="setActive(true)"
+                >
+                  Ativo
+                </button>
+                <button
+                  type="button"
+                  class="date-chip"
+                  role="radio"
+                  [class.active]="!form.controls.active.value"
+                  [attr.aria-checked]="!form.controls.active.value"
+                  (click)="setActive(false)"
+                >
+                  Inativo
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="field-grid">
+            <label class="field">
+              <span class="field-label">Setpoint de umidade (%)</span>
+              <input type="number" formControlName="setpoint_pct" min="0" max="100" step="0.1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Histerese (%)</span>
+              <input type="number" formControlName="hysteresis_pct" min="0" step="0.1" />
+            </label>
+            <label class="field">
+              <span class="field-label">Tempo máximo do ventilador (s)</span>
+              <input type="number" formControlName="fan_max_duration_s" min="0" step="1" />
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-submit" [disabled]="saving()">
+              {{ saving() ? 'Salvando…' : 'Salvar configurações' }}
+            </button>
+          </div>
+        </section>
+      </form>
+      @if (saveError(); as err) {
+        <p class="error-message feedback-banner" role="alert">{{ err }}</p>
+      }
+      @if (saveSuccess(); as ok) {
+        <p class="success-message feedback-banner" role="status">{{ ok }}</p>
+      }
+    </section>
+  }
+
+  <section class="evolucao-section" aria-busy="{{ loadingEvolucao() ? 'true' : 'false' }}">
+    <h2 class="section-title">Histórico do dia</h2>
+
+    <div class="date-picker-section">
+      <div class="date-nav">
+        <button type="button" class="date-nav-btn" (click)="diaAnterior()" aria-label="Dia anterior">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div class="date-current" aria-live="polite">
+          <span class="date-current-value">{{ formatarDataCurta(dataSelecionada()) }}</span>
+          @if (isHoje()) {
+            <span class="date-current-tag">Hoje</span>
+          } @else if (isOntem()) {
+            <span class="date-current-tag">Ontem</span>
+          }
+        </div>
+        <button type="button" class="date-nav-btn" (click)="diaProximo()"
+                [disabled]="isHoje()" aria-label="Próximo dia">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+      </div>
+      <div class="date-chips">
+        <button type="button" class="date-chip" [class.active]="isHoje()" (click)="irParaHoje()">Hoje</button>
+        <button type="button" class="date-chip" [class.active]="isOntem()" (click)="irParaOntem()">Ontem</button>
+        <label class="date-chip date-chip-input">
+          Outra data
+          <input
+            type="date"
+            class="date-input"
+            [value]="dataSelecionada()"
+            (change)="dataSelecionada.set($any($event.target).value); onDataChange()"
+          />
+        </label>
+      </div>
+    </div>
+
+    @if (loadingEvolucao()) {
+      <div class="loading-state" role="status">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p>Carregando gráficos…</p>
+      </div>
+    } @else if (errorEvolucao()) {
+      <p class="error-message">Falha ao carregar histórico.</p>
+    } @else if (medicoes().length === 0) {
+      <p class="empty-message">Sem medições para este dia.</p>
+    } @else {
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h3 class="chart-title">Temperatura e umidade</h3>
+          <div class="chart-wrapper">
+            <canvas baseChart [data]="chartDataClima" [options]="chartOptionsClima" type="line"></canvas>
+          </div>
+        </div>
+        <div class="chart-container">
+          <h3 class="chart-title">Umidade</h3>
+          <div class="chart-wrapper">
+            <canvas baseChart [data]="chartDataUmid" [options]="chartOptionsUmid" type="line"></canvas>
+          </div>
+        </div>
+        <div class="chart-container">
+          <h3 class="chart-title">Tensão do sistema</h3>
+          <div class="chart-wrapper">
+            <canvas baseChart [data]="chartDataVoltage" [options]="chartOptionsVoltage" type="line"></canvas>
+          </div>
+        </div>
+        <div class="chart-container">
+          <h3 class="chart-title">Corrente do sistema</h3>
+          <div class="chart-wrapper">
+            <canvas baseChart [data]="chartDataCurrent" [options]="chartOptionsCurrent" type="line"></canvas>
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+</div>

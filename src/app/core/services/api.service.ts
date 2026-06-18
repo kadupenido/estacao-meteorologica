@@ -107,6 +107,41 @@ export interface DeviceConfig {
 
 export type DeviceConfigInput = Omit<DeviceConfig, 'updated_at'>;
 
+export interface ControleUmidadeConfig {
+  setpoint_pct: number;
+  hysteresis_pct: number;
+  fan_max_duration_s: number;
+  active: boolean;
+  updated_at?: string | null;
+}
+
+export type ControleUmidadeConfigInput = Omit<ControleUmidadeConfig, 'updated_at'>;
+
+export interface ControleUmidadeResumo {
+  active: boolean;
+  setpoint_pct: number | null;
+  hysteresis_pct: number | null;
+  fan_max_duration_s: number | null;
+  current_temperatura: number | null;
+  current_umidade: number | null;
+  current_tensao_sistema: number | null;
+  current_corrente_sistema: number | null;
+  readings_at: string | null;
+  last_fan_at: string | null;
+  last_fan_duration_s: number | null;
+}
+
+export interface ControleUmidadeMedicao {
+  id: number;
+  temperatura: number | null;
+  umidade: number | null;
+  tensao_sistema: number | null;
+  corrente_sistema: number | null;
+  potencia_sistema: number | null;
+  tempo_ventilador_s: number | null;
+  created_at: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = environment.apiUrl;
@@ -152,5 +187,32 @@ export class ApiService {
 
   putDeviceConfig(payload: DeviceConfigInput): Observable<DeviceConfig> {
     return this.http.put<DeviceConfig>(`${this.baseUrl}/device/config`, payload);
+  }
+
+  getControleUmidadeConfig(): Observable<ControleUmidadeConfig> {
+    return this.http.get<ControleUmidadeConfig>(`${this.baseUrl}/controle-umidade/config`);
+  }
+
+  putControleUmidadeConfig(payload: ControleUmidadeConfigInput): Observable<ControleUmidadeConfig> {
+    return this.http.put<ControleUmidadeConfig>(`${this.baseUrl}/controle-umidade/config`, payload);
+  }
+
+  getControleUmidadeResumo(): Observable<ControleUmidadeResumo> {
+    return this.http.get<ControleUmidadeResumo>(`${this.baseUrl}/controle-umidade/resumo`);
+  }
+
+  getControleUmidadeUltima(): Observable<ControleUmidadeMedicao | null> {
+    return this.http.get<ControleUmidadeMedicao>(`${this.baseUrl}/controle-umidade/ultima`).pipe(
+      catchError((err) => {
+        if (err?.status === 404) return of(null);
+        return throwError(() => err);
+      }),
+    );
+  }
+
+  getControleUmidadePorData(data: string): Observable<ControleUmidadeMedicao[]> {
+    return this.http.get<ControleUmidadeMedicao[]>(`${this.baseUrl}/controle-umidade/por-data`, {
+      params: { data },
+    });
   }
 }
