@@ -76,7 +76,7 @@ export class ControleUmidadeComponent implements OnInit, OnDestroy {
   protected chartOptionsClima: ChartConfiguration<'line'>['options'] = this.buildClimaOptions();
   protected chartOptionsUmid: ChartConfiguration<'line'>['options'] = this.buildSingleOptions('%', 1);
   protected chartOptionsVoltage: ChartConfiguration<'line'>['options'] = this.buildSingleOptions('V', 2);
-  protected chartOptionsCurrent: ChartConfiguration<'line'>['options'] = this.buildSingleOptions('A', 3);
+  protected chartOptionsCurrent: ChartConfiguration<'line'>['options'] = this.buildSingleOptions('mA', 0);
 
   private pollingSub: Subscription | null = null;
   private pollIntervalMs = environment.refreshIntervalMs;
