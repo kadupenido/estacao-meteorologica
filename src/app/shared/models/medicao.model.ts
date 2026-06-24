@@ -11,6 +11,8 @@ export interface Medicao {
   potencia_sistema: number | null;
   umidade_solo_1: number | null;
   umidade_solo_2: number | null;
+  adc_solo_1: number | null;
+  adc_solo_2: number | null;
   tempo_irrigacao_s_1: number | null;
   tempo_irrigacao_s_2: number | null;
   created_at: string;

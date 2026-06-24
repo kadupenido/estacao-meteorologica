@@ -10,6 +10,8 @@ function createAuthMock(initialToken: string | null = null) {
   return {
     syncFromStorage: () => {},
     token: token.asReadonly(),
+    hasRefreshToken: () => false,
+    ensureSession: () => ({ subscribe: () => ({ unsubscribe: () => undefined }) }),
     logout: () => token.set(null),
   };
 }

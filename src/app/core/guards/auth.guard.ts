@@ -1,6 +1,7 @@
 import { PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CanActivateFn, Router } from '@angular/router';
+import { catchError, map, of } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
 
@@ -12,8 +13,13 @@ export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   auth.syncFromStorage();
-  if (auth.isLoggedIn()) {
-    return true;
-  }
-  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+
+  const loginRedirect = router.createUrlTree(['/login'], {
+    queryParams: { returnUrl: state.url },
+  });
+
+  return auth.ensureSession().pipe(
+    map((ok) => ok || loginRedirect),
+    catchError(() => of(loginRedirect)),
+  );
 };

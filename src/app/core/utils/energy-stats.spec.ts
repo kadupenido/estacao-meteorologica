@@ -24,6 +24,8 @@ function med(
     potencia_sistema: null,
     umidade_solo_1: null,
     umidade_solo_2: null,
+    adc_solo_1: null,
+    adc_solo_2: null,
     tempo_irrigacao_s_1: null,
     tempo_irrigacao_s_2: null,
     ...overrides,

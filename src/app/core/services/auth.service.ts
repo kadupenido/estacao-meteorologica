@@ -1,13 +1,14 @@
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
-import { Observable, finalize, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, finalize, map, of, shareReplay, tap, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import {
   AUTH_REFRESH_TOKEN_STORAGE_KEY,
   AUTH_TOKEN_STORAGE_KEY,
 } from '../auth/auth.constants';
+import { isAccessTokenExpired } from '../auth/jwt.utils';
 
 export interface LoginResponse {
   access_token: string;
@@ -41,7 +42,30 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return this.tokenSignal() !== null;
+    return this.hasRestorableSession();
+  }
+
+  hasRefreshToken(): boolean {
+    return this.getRefreshToken() !== null;
+  }
+
+  hasRestorableSession(): boolean {
+    const token = this.tokenSignal();
+    if (token && !isAccessTokenExpired(token)) {
+      return true;
+    }
+    return this.hasRefreshToken();
+  }
+
+  ensureSession(): Observable<boolean> {
+    const token = this.tokenSignal();
+    if (token && !isAccessTokenExpired(token)) {
+      return of(true);
+    }
+    if (!this.hasRefreshToken()) {
+      return of(false);
+    }
+    return this.refreshSession().pipe(map(() => true));
   }
 
   getRefreshToken(): string | null {

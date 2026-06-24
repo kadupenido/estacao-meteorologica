@@ -37,17 +37,25 @@ export class LoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.auth.syncFromStorage();
-    if (this.auth.isLoggedIn()) {
-      this.auth.me().subscribe({
-        next: () => void this.router.navigateByUrl('/clima'),
-        error: () => {
-          this.auth.logout();
+    this.auth.ensureSession().subscribe({
+      next: (ok) => {
+        if (ok) {
+          const returnUrl = safeReturnUrl(
+            this.route.snapshot.queryParamMap.get('returnUrl'),
+            '/clima',
+          );
+          void this.router.navigateByUrl(returnUrl);
+        } else {
           this.setSeo();
-        },
-      });
-    } else {
-      this.setSeo();
-    }
+        }
+      },
+      error: (err: unknown) => {
+        if (err instanceof HttpErrorResponse && err.status === 401) {
+          this.auth.logout();
+        }
+        this.setSeo();
+      },
+    });
   }
 
   private setSeo(): void {

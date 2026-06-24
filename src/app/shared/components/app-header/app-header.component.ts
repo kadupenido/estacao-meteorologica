@@ -42,7 +42,6 @@ export class AppHeaderComponent {
     { label: 'Clima', route: '/clima', visibleWhen: 'always' },
     { label: 'Energia', route: '/energia', visibleWhen: 'always' },
     { label: 'Irrigação', route: '/irrigation', visibleWhen: 'auth', exact: false },
-    { label: 'Controle umidade', route: '/controle-umidade', visibleWhen: 'auth', exact: true },
     { label: 'Dispositivo', route: '/device/settings', visibleWhen: 'auth', exact: true },
   ];
 
