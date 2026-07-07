@@ -107,6 +107,13 @@ export interface DeviceConfig {
 
 export type DeviceConfigInput = Omit<DeviceConfig, 'updated_at'>;
 
+export interface DeviceLog {
+  id: number;
+  source: string;
+  message: string;
+  created_at: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly baseUrl = environment.apiUrl;
@@ -152,5 +159,15 @@ export class ApiService {
 
   putDeviceConfig(payload: DeviceConfigInput): Observable<DeviceConfig> {
     return this.http.put<DeviceConfig>(`${this.baseUrl}/device/config`, payload);
+  }
+
+  getDeviceLogsPorData(data: string): Observable<DeviceLog[]> {
+    return this.http.get<DeviceLog[]>(`${this.baseUrl}/device/logs/por-data`, { params: { data } });
+  }
+
+  getDeviceLogsRecent(limit = 200): Observable<DeviceLog[]> {
+    return this.http.get<DeviceLog[]>(`${this.baseUrl}/device/logs/recent`, {
+      params: { limit: String(limit) },
+    });
   }
 }

@@ -1,0 +1,95 @@
+<div class="irrigation-page">
+  <header class="header">
+    <div class="header-main">
+      <h1 class="title">Logs do dispositivo</h1>
+      <p class="location">
+        Linhas enviadas pelo firmware captura (mesmo conteúdo do monitor serial).
+      </p>
+    </div>
+    <div class="page-actions">
+      <a routerLink="/device/settings" class="date-chip">Configurações</a>
+      <button type="button" class="date-chip" (click)="tentarNovamente()">Recarregar</button>
+    </div>
+  </header>
+
+  <section class="date-picker-section" aria-label="Seleção de data">
+    <div class="date-nav">
+      <button type="button" class="date-nav-btn" (click)="diaAnterior()" aria-label="Dia anterior">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <div class="date-current" aria-live="polite">
+        <span class="date-current-value">{{ formatarDataCurta(dataSelecionada()) }}</span>
+        @if (isHoje()) {
+          <span class="date-current-tag">Hoje</span>
+        } @else if (isOntem()) {
+          <span class="date-current-tag">Ontem</span>
+        }
+      </div>
+      <button type="button" class="date-nav-btn" (click)="diaProximo()"
+              [disabled]="isHoje()" aria-label="Próximo dia">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="date-chips">
+      <button type="button" class="date-chip" (click)="irParaHoje()">Hoje</button>
+      <button type="button" class="date-chip" (click)="irParaOntem()">Ontem</button>
+      <label class="date-input-label">
+        <span class="sr-only">Data</span>
+        <input
+          type="date"
+          class="date-input"
+          [value]="dataSelecionada()"
+          (change)="onDataInput($event)"
+        />
+      </label>
+    </div>
+  </section>
+
+  @if (loading()) {
+    <div class="loading-state" role="status" aria-live="polite">
+      <div class="loading-spinner" aria-hidden="true"></div>
+      <p>Carregando logs…</p>
+    </div>
+  } @else if (error()) {
+    <div class="empty-message">
+      <p>Não foi possível carregar os logs.</p>
+      <button type="button" class="date-chip" (click)="tentarNovamente()">Tentar novamente</button>
+    </div>
+  } @else if (logs().length === 0) {
+    <div class="empty-message">Nenhum log para esta data.</div>
+  } @else {
+    <section class="logs-section card" aria-label="Lista de logs">
+      <div class="logs-meta">
+        <span>{{ logs().length }} linha(s)</span>
+        @if (isHoje()) {
+          <span class="live-hint">Atualiza a cada 30 s</span>
+        }
+      </div>
+      <div class="logs-table-wrap">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th scope="col">Hora</th>
+              <th scope="col">Mensagem</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of logs(); track row.id) {
+              <tr>
+                <td class="logs-time">{{ formatarHora(row.created_at) }}</td>
+                <td class="logs-message"><pre>{{ row.message }}</pre></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

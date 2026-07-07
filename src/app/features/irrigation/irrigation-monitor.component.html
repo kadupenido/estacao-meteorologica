@@ -2,26 +2,36 @@
   <header class="header">
     <div class="header-main">
       <h1 class="title">Irrigação</h1>
-      <p class="location">Monitoramento em tempo real das zonas de solo e últimas ativações das bombas.</p>
+      @if (location) {
+        <p class="location">{{ location }}</p>
+      }
+      @if (summary()) {
+        <p class="last-update" aria-live="polite">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span class="sr-only">Dados ao vivo. </span>
+          Atualizado <span class="last-update-strong">{{ updatedAgo() ?? '-' }}</span>
+          <span class="last-update-sep" aria-hidden="true">·</span>
+          <span class="last-update-full">{{ formatDateTime(dataTimestamp()) }}</span>
+        </p>
+      }
     </div>
     <div class="page-actions">
       <a routerLink="/irrigation/settings" class="date-chip">Configurações</a>
-      <button type="button" class="date-chip" (click)="reload()">Atualizar agora</button>
     </div>
   </header>
 
-  @if (loading()) {
+  @if (loading() && !summary()) {
     <div class="loading-state" role="status" aria-live="polite">
       <div class="loading-spinner" aria-hidden="true"></div>
       <p>Carregando dados de irrigação…</p>
     </div>
-  } @else if (error()) {
+  } @else if (error() && !summary()) {
     <div class="error-state" role="alert">
       <p>Falha ao carregar dados.</p>
-      <button type="button" class="btn-retry" (click)="reload()">Tentar novamente</button>
+      <button type="button" class="btn-retry" (click)="fetchAllData()">Tentar novamente</button>
     </div>
   } @else if (summary(); as s) {
-    <section class="zones-section" aria-live="polite">
+    <section class="zones-section" aria-live="polite" aria-busy="{{ loading() ? 'true' : 'false' }}">
       <h2 class="section-title">Estado atual</h2>
       <div class="secondary-grid">
         <article class="card zone-card">

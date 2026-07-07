@@ -43,6 +43,7 @@ export class AppHeaderComponent {
     { label: 'Energia', route: '/energia', visibleWhen: 'always' },
     { label: 'Irrigação', route: '/irrigation', visibleWhen: 'auth', exact: false },
     { label: 'Dispositivo', route: '/device/settings', visibleWhen: 'auth', exact: true },
+    { label: 'Logs', route: '/device/logs', visibleWhen: 'auth', exact: true },
   ];
 
   protected readonly visiblePrimaryNav = computed(() =>

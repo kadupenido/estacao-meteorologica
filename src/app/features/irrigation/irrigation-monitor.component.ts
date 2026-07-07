@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit, PLATFORM_ID, computed, inject, signal } f
 import { DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Subscription, timer } from 'rxjs';
+import { Subject, Subscription, catchError, forkJoin, of, takeUntil, timer } from 'rxjs';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartDataset } from 'chart.js';
 
@@ -41,6 +41,9 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly seo = inject(SeoService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroy$ = new Subject<void>();
+
+  protected readonly location = environment.location;
 
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
@@ -62,12 +65,50 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   protected readonly manualMsg2 = signal<ManualFeedback | null>(null);
 
   protected readonly now = signal(Date.now());
+  private nowTick = signal(Date.now());
+
+  protected readonly dataTimestamp = computed((): string | null => {
+    const s = this.summary();
+    if (!s) return null;
+    const timestamps = [s.zone_1.current_soil_humidity_at, s.zone_2.current_soil_humidity_at].filter(
+      (v): v is string => !!v,
+    );
+    if (timestamps.length === 0) return null;
+    let latest = timestamps[0];
+    let latestMs = this.parseTimestamp(latest) ?? 0;
+    for (const ts of timestamps.slice(1)) {
+      const ms = this.parseTimestamp(ts);
+      if (ms !== null && ms > latestMs) {
+        latest = ts;
+        latestMs = ms;
+      }
+    }
+    return latest;
+  });
+
+  protected readonly updatedAgo = computed(() => {
+    this.nowTick();
+    const ts = this.dataTimestamp();
+    if (!ts) return null;
+    const ms = this.parseTimestamp(ts);
+    if (ms === null) return null;
+    const diffSec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+    if (diffSec < 30) return 'agora mesmo';
+    if (diffSec < 60) return `há ${diffSec}s`;
+    const min = Math.floor(diffSec / 60);
+    if (min < 60) return `há ${min} min`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `há ${hr} h`;
+    const dias = Math.floor(hr / 24);
+    return `há ${dias} d`;
+  });
 
   protected chartDataSolo: ChartConfiguration<'line'>['data'] = { labels: [], datasets: [] };
   protected chartOptionsSolo: ChartConfiguration<'line'>['options'] = this.buildChartOptions();
 
   private pollingSub: Subscription | null = null;
   private tickerSub: Subscription | null = null;
+  private visibilityHandler: (() => void) | null = null;
   private pollIntervalMs = environment.refreshIntervalMs;
 
   ngOnInit(): void {
@@ -76,33 +117,80 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
       description: 'Estado atual das zonas de irrigação, umidade do solo e última ativação de bombas.',
       robots: 'noindex, nofollow',
     });
-    this.reload();
-    this.carregarEvolucao();
+    this.fetchAllData();
     this.startPolling();
     this.tickerSub = timer(0, 1000).subscribe(() => this.now.set(Date.now()));
+
+    if (isPlatformBrowser(this.platformId)) {
+      timer(30_000, 30_000)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => this.nowTick.set(Date.now()));
+
+      this.visibilityHandler = () => {
+        if (document.hidden) {
+          this.stopPolling();
+        } else {
+          this.fetchAllData();
+          this.startPolling();
+        }
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
   }
 
   ngOnDestroy(): void {
-    this.pollingSub?.unsubscribe();
-    this.pollingSub = null;
+    this.stopPolling();
     this.tickerSub?.unsubscribe();
     this.tickerSub = null;
+    if (this.visibilityHandler && isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  protected reload(): void {
+  protected fetchAllData(): void {
     this.loading.set(true);
+    this.loadingEvolucao.set(true);
     this.error.set(false);
-    this.api.getIrrigationSummary().subscribe({
-      next: (summary) => {
-        this.summary.set(summary);
-        this.loading.set(false);
-        this.syncPollInterval(summary);
-      },
-      error: () => {
-        this.error.set(true);
-        this.loading.set(false);
-      },
-    });
+    this.errorEvolucao.set(false);
+
+    forkJoin({
+      summary: this.api.getIrrigationSummary().pipe(
+        catchError(() => {
+          this.error.set(true);
+          return of(null as IrrigationSummaryResponse | null);
+        }),
+      ),
+      medicoes: this.api.getMedicoesPorData(this.dataSelecionada()).pipe(
+        catchError(() => {
+          this.errorEvolucao.set(true);
+          return of(null as Medicao[] | null);
+        }),
+      ),
+    })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ({ summary, medicoes }) => {
+          if (summary !== null) {
+            this.summary.set(summary);
+            this.syncPollInterval(summary);
+          }
+          if (medicoes !== null) {
+            this.medicoes.set(medicoes);
+            if (isPlatformBrowser(this.platformId)) {
+              this.atualizarChartSolo(medicoes);
+            }
+          }
+          this.loading.set(false);
+          this.loadingEvolucao.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+          this.loadingEvolucao.set(false);
+        },
+      });
   }
 
   protected setData(d: string): void {
@@ -167,12 +255,12 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
           kind: 'success',
           text: 'Comando enviado. O painel mostrará "Bomba ativa" assim que o dispositivo iniciar (~1 min).',
         });
-        this.reload();
+        this.fetchAllData();
       },
       error: (err) => {
         busy.set(false);
         msg.set({ kind: 'error', text: err?.error?.detail ?? 'Falha ao enviar comando.' });
-        this.reload();
+        this.fetchAllData();
       },
     });
   }
@@ -192,14 +280,14 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
       next: () => {
         busy.set(false);
         msg.set({ kind: 'success', text: 'Comando cancelado.' });
-        this.reload();
+        this.fetchAllData();
       },
       error: (err) => {
         busy.set(false);
         if (err?.status !== 409) {
           msg.set({ kind: 'error', text: err?.error?.detail ?? 'Falha ao cancelar comando.' });
         }
-        this.reload();
+        this.fetchAllData();
       },
     });
   }
@@ -428,7 +516,14 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   }
 
   private startPolling(): void {
+    this.stopPolling();
+    this.pollingSub = timer(this.pollIntervalMs, this.pollIntervalMs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.fetchAllData());
+  }
+
+  private stopPolling(): void {
     this.pollingSub?.unsubscribe();
-    this.pollingSub = timer(this.pollIntervalMs, this.pollIntervalMs).subscribe(() => this.reload());
+    this.pollingSub = null;
   }
 }
