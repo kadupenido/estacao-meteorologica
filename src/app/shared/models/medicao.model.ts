@@ -13,6 +13,8 @@ export interface Medicao {
   umidade_solo_2: number | null;
   adc_solo_1: number | null;
   adc_solo_2: number | null;
+  mv_solo_1: number | null;
+  mv_solo_2: number | null;
   tempo_irrigacao_s_1: number | null;
   tempo_irrigacao_s_2: number | null;
   created_at: string;
