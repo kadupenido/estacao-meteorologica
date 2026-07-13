@@ -54,6 +54,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected errorDados = signal(false);
 
   protected dataSelecionada = signal<string>(this.hoje());
+  /** 'dia' = por-data; '7d' = série horária dos últimos 7 dias. */
+  protected periodo = signal<'dia' | '7d'>('dia');
   protected medicoes = signal<Medicao[]>([]);
   protected loadingEvolucao = signal(false);
   protected errorEvolucao = signal(false);
@@ -102,15 +104,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return `há ${dias} d`;
   });
 
-  protected isHoje = computed(() => this.dataSelecionada() === this.hoje());
-  protected isOntem = computed(() => this.dataSelecionada() === this.ontem());
+  protected isSeteDias = computed(() => this.periodo() === '7d');
+  protected isHoje = computed(
+    () => this.periodo() === 'dia' && this.dataSelecionada() === this.hoje(),
+  );
+  protected isOntem = computed(
+    () => this.periodo() === 'dia' && this.dataSelecionada() === this.ontem(),
+  );
 
   /**
    * Compara a medição mais recente com uma de ~1h antes (ou a primeira do dia,
    * se ainda não houver 1h de dados). Só calcula tendências para o dia atual.
    */
   protected trends = computed(() => {
-    if (!this.isHoje()) return null;
+    if (!this.isHoje() || this.isSeteDias()) return null;
     const cur = this.medicao();
     const meds = this.medicoes();
     if (!cur || meds.length < 2) return null;
@@ -261,17 +268,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ===== Date picker =====
 
   protected setData(d: string): void {
-    if (this.dataSelecionada() === d) return;
+    if (this.periodo() === 'dia' && this.dataSelecionada() === d) return;
+    this.periodo.set('dia');
     this.dataSelecionada.set(d);
     this.carregar();
   }
 
   protected diaAnterior(): void {
+    if (this.isSeteDias()) return;
     this.setData(this.somarDias(this.dataSelecionada(), -1));
   }
 
   protected diaProximo(): void {
-    if (this.isHoje()) return;
+    if (this.isSeteDias() || this.isHoje()) return;
     this.setData(this.somarDias(this.dataSelecionada(), 1));
   }
 
@@ -283,8 +292,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.setData(this.ontem());
   }
 
-  protected onDataChange(): void {
+  protected irParaSeteDias(): void {
+    if (this.periodo() === '7d') return;
+    this.periodo.set('7d');
     this.carregar();
+  }
+
+  protected onDateInput(value: string): void {
+    this.setData(value);
   }
 
   protected setChartAtivo(tab: ChartTab): void {
@@ -366,7 +381,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           return of(null as Medicao | null);
         }),
       ),
-      medicoes: this.api.getMedicoesPorData(this.dataSelecionada()).pipe(
+      medicoes: this.getMedicoesRequest().pipe(
         catchError(() => {
           this.errorEvolucao.set(true);
           return of(null as Medicao[] | null);
@@ -398,11 +413,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
   }
 
+  private getMedicoesRequest() {
+    if (this.periodo() === '7d') {
+      const ate = this.hoje();
+      return this.api.getMedicoesSerie(this.somarDias(ate, -6), ate);
+    }
+    return this.api.getMedicoesPorData(this.dataSelecionada());
+  }
+
   private carregar(): void {
-    const data = this.dataSelecionada();
     this.loadingEvolucao.set(true);
     this.errorEvolucao.set(false);
-    this.api.getMedicoesPorData(data).subscribe({
+    this.getMedicoesRequest().subscribe({
       next: (meds) => {
         this.medicoes.set(meds);
         this.atualizarCharts(meds);
@@ -616,7 +638,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private atualizarCharts(meds: Medicao[]): void {
     const useSeconds = this.detectDenseLabels(meds);
-    const labels = meds.map((m) => this.formatarHora(m.created_at, useSeconds));
+    const labels = meds.map((m) => this.formatarEixoX(m.created_at, useSeconds));
 
     const baseLine = {
       tension: 0.4,
@@ -722,6 +744,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  private formatarEixoX(iso: string, withSeconds = false): string {
+    if (this.periodo() === '7d') {
+      try {
+        return new Date(this.toUtcIso(iso)).toLocaleString('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch {
+        return '-';
+      }
+    }
+    return this.formatarHora(iso, withSeconds);
+  }
+
   protected formatarData(iso: string): string {
     try {
       return new Date(this.toUtcIso(iso)).toLocaleString('pt-BR', {
@@ -747,6 +786,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       month: 'short',
       year: 'numeric',
     });
+  }
+
+  protected formatarPeriodoSeteDias(): string {
+    const ate = this.hoje();
+    const de = this.somarDias(ate, -6);
+    return `${this.formatarDataCurta(de)} – ${this.formatarDataCurta(ate)}`;
   }
 
   protected formatarHoraExibicao(iso: string): string {

@@ -210,26 +210,35 @@
   }
 
   <section class="evolucao-section" aria-busy="{{ loadingEvolucao() ? 'true' : 'false' }}">
-    <h2 class="section-title">Evolução da umidade do solo</h2>
+    <h2 class="section-title">
+      {{ isSeteDias() ? 'Evolução da umidade do solo (7 dias)' : 'Evolução da umidade do solo' }}
+    </h2>
 
     <div class="date-picker-section">
       <div class="date-nav">
-        <button type="button" class="date-nav-btn" (click)="diaAnterior()" aria-label="Dia anterior">
+        <button type="button" class="date-nav-btn" (click)="diaAnterior()"
+                [disabled]="isSeteDias()"
+                aria-label="Dia anterior">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="15 18 9 12 15 6"/>
           </svg>
         </button>
         <div class="date-current" aria-live="polite">
-          <span class="date-current-value">{{ formatarDataCurta(dataSelecionada()) }}</span>
-          @if (isHoje()) {
-            <span class="date-current-tag">Hoje</span>
-          } @else if (isOntem()) {
-            <span class="date-current-tag">Ontem</span>
+          @if (isSeteDias()) {
+            <span class="date-current-value">{{ formatarPeriodoSeteDias() }}</span>
+            <span class="date-current-tag">7 dias</span>
+          } @else {
+            <span class="date-current-value">{{ formatarDataCurta(dataSelecionada()) }}</span>
+            @if (isHoje()) {
+              <span class="date-current-tag">Hoje</span>
+            } @else if (isOntem()) {
+              <span class="date-current-tag">Ontem</span>
+            }
           }
         </div>
         <button type="button" class="date-nav-btn" (click)="diaProximo()"
-                [disabled]="isHoje()" aria-label="Próximo dia">
+                [disabled]="isSeteDias() || isHoje()" aria-label="Próximo dia">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="9 18 15 12 9 6"/>
@@ -240,14 +249,16 @@
       <div class="date-chips" role="group" aria-label="Atalhos de data">
         <button type="button" class="date-chip" [class.active]="isHoje()" (click)="irParaHoje()">Hoje</button>
         <button type="button" class="date-chip" [class.active]="isOntem()" (click)="irParaOntem()">Ontem</button>
-        <label class="date-chip date-chip-input" for="data-evolucao-irrigacao">
+        <button type="button" class="date-chip" [class.active]="isSeteDias()" (click)="irParaSeteDias()">7 dias</button>
+        <label class="date-chip date-chip-input" for="data-evolucao-irrigacao" [class.disabled]="isSeteDias()">
           <span>Outra data</span>
           <input
             id="data-evolucao-irrigacao"
             type="date"
             class="date-input"
+            [disabled]="isSeteDias()"
             [ngModel]="dataSelecionada()"
-            (ngModelChange)="dataSelecionada.set($event); onDataChange()"
+            (ngModelChange)="onDateInput($event)"
           />
         </label>
       </div>
@@ -264,7 +275,9 @@
         <button type="button" class="btn-retry" (click)="tentarNovamenteEvolucao()">Tentar novamente</button>
       </div>
     } @else if (medicoes().length === 0) {
-      <div class="empty-message">Nenhuma medição encontrada para esta data.</div>
+      <div class="empty-message">
+        {{ isSeteDias() ? 'Nenhuma medição encontrada neste período.' : 'Nenhuma medição encontrada para esta data.' }}
+      </div>
     } @else {
       <div class="chart-container">
         <h3 class="chart-title">Umidade do solo (%)</h3>

@@ -1,5 +1,5 @@
 export interface Medicao {
-  id: number;
+  id: number | null;
   temperatura: number | null;
   umidade: number | null;
   pressao: number | null;

@@ -133,6 +133,10 @@ export class ApiService {
     return this.http.get<Medicao[]>(`${this.baseUrl}/dados/por-data`, { params: { data } });
   }
 
+  getMedicoesSerie(de: string, ate: string): Observable<Medicao[]> {
+    return this.http.get<Medicao[]>(`${this.baseUrl}/dados/serie`, { params: { de, ate } });
+  }
+
   getIrrigationConfig(): Observable<IrrigationConfigResponse> {
     return this.http.get<IrrigationConfigResponse>(`${this.baseUrl}/irrigation/config`);
   }

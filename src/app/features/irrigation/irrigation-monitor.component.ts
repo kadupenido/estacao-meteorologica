@@ -50,12 +50,18 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   protected readonly summary = signal<IrrigationSummaryResponse | null>(null);
 
   protected readonly dataSelecionada = signal<string>(this.hoje());
+  protected readonly periodo = signal<'dia' | '7d'>('dia');
   protected readonly medicoes = signal<Medicao[]>([]);
   protected readonly loadingEvolucao = signal(false);
   protected readonly errorEvolucao = signal(false);
 
-  protected readonly isHoje = computed(() => this.dataSelecionada() === this.hoje());
-  protected readonly isOntem = computed(() => this.dataSelecionada() === this.ontem());
+  protected readonly isSeteDias = computed(() => this.periodo() === '7d');
+  protected readonly isHoje = computed(
+    () => this.periodo() === 'dia' && this.dataSelecionada() === this.hoje(),
+  );
+  protected readonly isOntem = computed(
+    () => this.periodo() === 'dia' && this.dataSelecionada() === this.ontem(),
+  );
 
   protected readonly manualCtrl1 = this.buildManualControl();
   protected readonly manualCtrl2 = this.buildManualControl();
@@ -163,7 +169,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
           return of(null as IrrigationSummaryResponse | null);
         }),
       ),
-      medicoes: this.api.getMedicoesPorData(this.dataSelecionada()).pipe(
+      medicoes: this.getMedicoesRequest().pipe(
         catchError(() => {
           this.errorEvolucao.set(true);
           return of(null as Medicao[] | null);
@@ -194,17 +200,19 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   }
 
   protected setData(d: string): void {
-    if (this.dataSelecionada() === d) return;
+    if (this.periodo() === 'dia' && this.dataSelecionada() === d) return;
+    this.periodo.set('dia');
     this.dataSelecionada.set(d);
     this.carregarEvolucao();
   }
 
   protected diaAnterior(): void {
+    if (this.isSeteDias()) return;
     this.setData(this.somarDias(this.dataSelecionada(), -1));
   }
 
   protected diaProximo(): void {
-    if (this.isHoje()) return;
+    if (this.isSeteDias() || this.isHoje()) return;
     this.setData(this.somarDias(this.dataSelecionada(), 1));
   }
 
@@ -216,8 +224,14 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
     this.setData(this.ontem());
   }
 
-  protected onDataChange(): void {
+  protected irParaSeteDias(): void {
+    if (this.periodo() === '7d') return;
+    this.periodo.set('7d');
     this.carregarEvolucao();
+  }
+
+  protected onDateInput(value: string): void {
+    this.setData(value);
   }
 
   protected tentarNovamenteEvolucao(): void {
@@ -234,6 +248,12 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
       month: 'short',
       year: 'numeric',
     });
+  }
+
+  protected formatarPeriodoSeteDias(): string {
+    const ate = this.hoje();
+    const de = this.somarDias(ate, -6);
+    return `${this.formatarDataCurta(de)} – ${this.formatarDataCurta(ate)}`;
   }
 
   protected activateManual(zone: 1 | 2): void {
@@ -331,7 +351,7 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
   private carregarEvolucao(): void {
     this.loadingEvolucao.set(true);
     this.errorEvolucao.set(false);
-    this.api.getMedicoesPorData(this.dataSelecionada()).subscribe({
+    this.getMedicoesRequest().subscribe({
       next: (meds) => {
         this.medicoes.set(meds);
         if (isPlatformBrowser(this.platformId)) {
@@ -346,8 +366,16 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
     });
   }
 
+  private getMedicoesRequest() {
+    if (this.periodo() === '7d') {
+      const ate = this.hoje();
+      return this.api.getMedicoesSerie(this.somarDias(ate, -6), ate);
+    }
+    return this.api.getMedicoesPorData(this.dataSelecionada());
+  }
+
   private atualizarChartSolo(meds: Medicao[]): void {
-    const labels = meds.map((m) => this.formatarHora(m.created_at));
+    const labels = meds.map((m) => this.formatarEixoX(m.created_at));
 
     const baseLine = {
       tension: 0.4,
@@ -477,6 +505,24 @@ export class IrrigationMonitorComponent implements OnInit, OnDestroy {
     } catch {
       return '-';
     }
+  }
+
+  private formatarEixoX(iso: string): string {
+    if (this.periodo() === '7d') {
+      try {
+        const isoUtc = iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso) ? iso : `${iso}Z`;
+        return new Date(isoUtc).toLocaleString('pt-BR', {
+          timeZone: 'America/Sao_Paulo',
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch {
+        return '-';
+      }
+    }
+    return this.formatarHora(iso);
   }
 
   private parseTimestamp(value: string): number | null {

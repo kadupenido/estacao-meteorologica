@@ -85,6 +85,12 @@
   padding: 0 0.85rem;
   gap: 0.4rem;
 
+  &.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
   &::after {
     content: '▾';
     color: var(--text-muted);
