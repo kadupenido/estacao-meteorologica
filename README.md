@@ -8,7 +8,7 @@ Interface web do projeto em [Angular](https://angular.dev/) 21 com **SSR** (rend
 - `@angular/ssr` + Express — build híbrido (browser + servidor Node)
 - `chart.js` / `ng2-charts` — gráficos do dashboard
 - Vitest (`ng test`) — testes unitários
-- Container de produção: Node 22 Alpine (`Dockerfile`), orquestrado pelo compose em `api-node/deploy/`
+- Container de produção: Node 22 Alpine (`Dockerfile` + `docker-compose.yml` com Traefik)
 
 ## Rotas
 
@@ -41,7 +41,7 @@ npm start
 # ou: ng serve
 ```
 
-Abre `http://localhost:4200/`. O `proxy.conf.json` encaminha `/api` para o backend configurado (por padrão a API de produção). Para API local, altere o `target` ou use o stack Docker em `api-node/deploy/`.
+Abre `http://localhost:4200/`. O `proxy.conf.json` encaminha `/api` para o backend configurado (por padrão a API de produção). Para API local, altere o `target`.
 
 As URLs da API usam caminho relativo `/api` (`environment.apiUrl`), igual em dev e produção.
 
@@ -70,9 +70,26 @@ No servidor SSR (`src/server.ts`), pedidos do browser a `/api/*` são reencaminh
 | `PORT` | Porta HTTP do Node (padrão `4000`) |
 | `API_UPSTREAM` | Backend sem `/api` (ex.: `http://monitor-ambiental-api:8000`) |
 
-## Docker
+## Docker / Deploy (GHCR + Traefik)
 
-O frontend é construído pelo `docker-compose.yml` em `api-node/deploy/` (serviço `web`), não por um compose próprio neste repositório. Rede interna `monitor-ambiental-internal`; apenas o nginx (`front`) fica exposto na rede externa `web`.
+CI/CD: push em `master` (ou Actions → Deploy) constrói a imagem SSR, publica em `ghcr.io/kadupenido/monitor-ambiental-front` e faz deploy em `/srv/monitor-ambiental-frontend` no VPS.
+
+```bash
+sudo mkdir -p /srv/monitor-ambiental-frontend
+# rede traefik-public e Traefik já devem existir (partilhados com a API)
+```
+
+O Compose sobe só o container Node (porta 4000). Traefik roteia `https://tempo.kadupenido.com` (priority baixa) para o SSR; `/api` fica com a API (priority 100). `API_UPSTREAM` aponta para `http://monitor-ambiental-api:8000` na rede `traefik-public`.
+
+**Secrets do GitHub:** `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY` (+ `VPS_PORT` se ≠ 22). Sem `.env` de runtime — `apiUrl` é `/api` no build Angular.
+
+```bash
+# verificar
+curl -I https://tempo.kadupenido.com/
+
+# rollback rápido
+IMAGE_TAG=sha-<commit> docker compose -f /srv/monitor-ambiental-frontend/docker-compose.yml up -d
+```
 
 ## Testes
 

@@ -1,5 +1,11 @@
 node_modules
 dist
 .angular
+.idea
 .vscode
+.git
+.github
+docker-compose*.yml
+*.log
+.DS_Store
 *.md
