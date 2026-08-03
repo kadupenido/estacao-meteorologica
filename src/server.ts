@@ -5,19 +5,56 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import express from 'express';
+import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { join } from 'node:path';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 const apiUpstream = process.env['API_UPSTREAM'] || 'http://monitor-ambiental-api:8000';
 
+function assertSafeUpstream(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('API_UPSTREAM inválido');
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('API_UPSTREAM deve usar http ou https');
+  }
+  return parsed.toString().replace(/\/$/, '');
+}
+
+const upstream = assertSafeUpstream(apiUpstream);
+
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        'default-src': ["'self'"],
+        'script-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", 'data:', 'blob:'],
+        'font-src': ["'self'", 'data:'],
+        'connect-src': ["'self'"],
+        'frame-ancestors': ["'none'"],
+        'object-src': ["'none'"],
+        'base-uri': ["'self'"],
+        'form-action': ["'self'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+
+app.use(
   '/api',
   createProxyMiddleware({
-    target: apiUpstream,
+    target: upstream,
     changeOrigin: true,
     pathRewrite: { '^/api': '' },
   }),

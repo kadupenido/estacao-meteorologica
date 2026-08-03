@@ -11,9 +11,12 @@ ENV NODE_ENV=production
 ENV PORT=4000
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 COPY --from=build /app/dist/monitor-ambiental ./dist/monitor-ambiental
+
+RUN chown -R node:node /app
+USER node
 
 EXPOSE 4000
 

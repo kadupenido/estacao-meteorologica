@@ -25,11 +25,24 @@ services:
       - traefik.http.routers.monitor-ambiental-front.entrypoints=websecure
       - traefik.http.routers.monitor-ambiental-front.tls.certresolver=letsencrypt
       - traefik.http.routers.monitor-ambiental-front.priority=1
+      - traefik.http.routers.monitor-ambiental-front.middlewares=monitor-ambiental-front-sec-headers
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.stsSeconds=31536000
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.stsIncludeSubdomains=true
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.stsPreload=true
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.browserXssFilter=true
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.frameDeny=true
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.referrerPolicy=strict-origin-when-cross-origin
+      - traefik.http.middlewares.monitor-ambiental-front-sec-headers.headers.permissionsPolicy=camera=(),microphone=(),geolocation=()
       - traefik.http.services.monitor-ambiental-front.loadbalancer.server.port=4000
     networks:
       - traefik-public
+      - app
 
 networks:
+  app:
+    external: true
+    name: monitor-ambiental-app
   traefik-public:
     external: true
     name: traefik-public
