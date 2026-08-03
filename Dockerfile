@@ -5,14 +5,21 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
+# Dependências de produção apenas (sem package-lock na imagem final — evita falso positivo do Trivy em dep tree de build)
+FROM node:22-alpine AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts \
+  && npm cache clean --force \
+  && rm -f package-lock.json
+
 FROM node:22-alpine
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=4000
 
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-
+COPY --from=prod-deps /app/package.json ./
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/dist/monitor-ambiental ./dist/monitor-ambiental
 
 RUN chown -R node:node /app
